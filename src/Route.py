@@ -3,19 +3,23 @@
 
 # Author      :   Xionghui Chen
 # Created     :   2017.1.22
-# Modified    :   2017.1.22
+# Modified    :   2017.1.23
 # Version     :   1.0
 # Route.py
 
 """
 路线类，包含了一个公路的诸多段落
 """
-from functions import binomial_creator
+import copy
 import numpy as np
 import random
 import json
 import logging
 from matplotlib import pyplot as plt
+
+from functions import binomial_creator, do_probability_test
+from Global import MAX_PATH, cars_info
+from Car import NoAutoCar
 class Route(object):
 	def __init__(self,route_id,resource_item_list, time_slice):
 		"""
@@ -26,6 +30,37 @@ class Route(object):
 		self.road_list =[]# 构造每一个道路路段的数据结构
 		for value in resource_item_list:
 			self.road_list.append(Road(value, time_slice))
+
+	def plot(self,line_number,count_max,direction='up'):
+		if direction =='up':
+			count =2
+			while(count <= count_max):
+				x = []
+				y = []
+				last_cell_amount = 0
+				for path_num, road in enumerate(self.road_list):
+					path = road.inc_path
+					for index, path_list in enumerate(path.recorder[line_number]):
+						# if count == 3:
+							# logging.info("[route.plot] self.recorder[line_number]:%s"%self.recorder[line_number])
+						appear = False
+						try:
+							place = path_list.index(count)
+							appear = True
+							x.append(place+last_cell_amount)
+							y.append(index)
+						except Exception as e:
+							if appear:
+								# 车消失了
+								break
+					last_cell_amount = last_cell_amount +  path.cell_amount
+					# print "last cell amount : %s"%last_cell_amount
+				plt.plot(x,y,'k-')
+				count = count + 1
+			plt.title("time-space in single path",fontsize=15)
+			plt.xlabel("space")
+			plt.ylabel("time", fontsize=15)
+			plt.show()
 
 """
 公路段类，包含了两个方向的公路,对应excel的一调数据
@@ -48,7 +83,6 @@ class Road(object):
 		self.time_slice = time_slice
 		# self.no_peak_amount_per_hours = self._no_peak_amount_per_hours()
 		# 累加的二项分布概率
-		
 		self.acc_bi_peak = []
 		self.acc_bi_no_peak = []
 		self.inc_path=Path(self.increase_dir, self.startpost, self.endpost)
@@ -81,17 +115,21 @@ class Road(object):
 		return self.acc_bi_no_peak
 	
 	def _peak_amount_per_hours(self, last_amount):
-		return (self.traffic_amount - last_amount)* self.peak_ratio / self.peak_hours/(self.increase_dir + self.decrease_dir)
+		return ( self.car_volume() - last_amount )* self.peak_ratio / self.peak_hours
 
 	def _no_peak_amount_per_hours(self, last_amount):
-		return (self.traffic_amount - last_amount) * self.no_peak_ratio / self.no_peak_hours/(self.increase_dir + self.decrease_dir)
+		return (self.car_volume() - last_amount) * self.no_peak_ratio / self.no_peak_hours/(self.increase_dir + self.decrease_dir)
 
+	def car_volume(self):
+		return self.traffic_amount /(self.increase_dir + self.decrease_dir)
+
+
+		
+"""
+	构造一个一个方向的路，这个是一个元胞自动机进行模拟的单元
+"""
 class Path(object):
-
-	def __init__(self,pathnum, startpost,endpost):
-		"""
-			构造一个一个方向的路，这个是一个元胞自动机进行模拟的单元
-		"""
+	def __init__(self,pathnum, startpost, endpost):
 		self.pathnum = pathnum
 		self.startpost = startpost
 		self.endpost = endpost
@@ -100,17 +138,37 @@ class Path(object):
 		self.mile_ratio = 1000
 		self.cell_amount = self._set_cell_amount()
 		self.recorder = {}
+		self.volume = []
 		count = 0
-
-		while count < self.pathnum:
-			self.path_map.append([0]*self.cell_amount)
+		# 创建虚拟车辆，即障碍物
+		self.car_dictory[1] = NoAutoCar(0, cars_info[1])
+		while count < MAX_PATH:
+			if count >= MAX_PATH - self.pathnum:
+				self.path_map.append([0]*self.cell_amount)
+			else:
+				# 使用虚拟车辆1号车占位
+				self.path_map.append([1]*self.cell_amount)
+			#[todo]
 			count = count + 1
 
 	def add_car(self,car,car_id):
 		success = False
 		add_place = 0
-		lanes = random.randint(0,self.pathnum - 1)
+		#[todo] 换道
+		lanes = car.get_lanes()
+		if lanes == MAX_PATH:
+			# 这是一辆新车，需要接受道路初始化
+			lanes = random.randint(MAX_PATH - self.pathnum, MAX_PATH - 1)
 		while(not success):
+			# print "[add car]lanes in add car %s"%lanes
+			# print "[add car]add_place in add car %s"%add_place
+			if self.path_map[lanes][add_place] == 1:
+				# 一号车代表的是路障，
+				# 当老车进入新的道路的时候，如果遇到并道，会出现这个情况
+				# 同时，这说明了，并道冲突的情况在一开始加入车的时候，就保证解决了，
+				# 之后不用考虑一号虚拟车[换道的时候要考虑]
+				lanes = lanes + 1
+				continue
 			if add_place >= self.cell_amount:
 				# 车辆爆表了，不加了！
 				break
@@ -147,47 +205,73 @@ class Path(object):
 	def _set_cell_amount(self):
 		return int((self.endpost - self.startpost) * self.mile_ratio)
 
-	def update(self):
+	def update(self, remain_rate):
 		"""
 		1. 遍历目前存在于该路段的所有汽车；
 		2. 对每辆汽车做变换车道操作
 		3. 对每辆汽车做更新操作
 		"""
 		count = 0
-		temp_path_map=[]
-		while count < self.pathnum:
-			temp_path_map.append([0]*self.cell_amount)
-			count = count + 1
+		clear_list = []
+		change_map = []
 		output_cars = {}
-		for car_id,car in self.car_dictory.items():
+		for car_id,car in self.car_dictory.items():	
+			if car_id == 1:
+				# 一号车不用更新
+				continue
 			logging.info("car_id is %s"%car_id)
 			lanes = car.get_lanes()
 			place = car.get_place()
+			# [增加弃车规则]
+			# if not do_probability_test(remain_rate):
+			# 	# 判定为该车在该过程中从其他道路离开了
+			# 	# 清空该车在地图的状态
+			# 	# print "==in do probability test"
+			# 	# print "lanes: %s"%lanes
+			# 	# print "id : %s"%car_id
+			# 	# print "place: %s"%place
+			# 	change_map.append([lanes,place,0])
+			# 	clear_list.append(car_id) 
+			# 	continue
 			forward_cars = self.find_nearest_car(2,1,lanes,place)
 			# back_cars = self.find_nearest_car(1,-1,car.get_lanes(),car.get_place())
 			new_location = car.update_status(forward_cars)
 			# 清空历史状态
-			temp_path_map[lanes][place] = 0 
+			change_map.append([lanes,place,0])
 			# 如果新的location过大，则说明已经离开这个地方了
 			if new_location[1] < self.cell_amount:
 				# 记录新状态
-				temp_path_map[new_location[0]][new_location[1]] = car_id
+				change_map.append([new_location[0],new_location[1],car_id])
 			else:
 				output_cars[car_id] = car
-		self.path_map = temp_path_map
+
 		for key,value in output_cars.items():
 			del self.car_dictory[key]
-		self.update_recorder()
+		for item in clear_list:
+			# 清空本轮被随机清除的车辆
+			del self.car_dictory[item]
+		for item in change_map:
+			# print "[update.change_map], item[0] %s"%item[0]
+			# print "[update.change_map], item[1] %s"%item[1]
+			# print "[update.change_map], item[2] %s"%item[2]
+			self.path_map[item[0]][item[1]] = item[2]
+		self.update_recorder(output_cars)
 		return output_cars
 
-	def update_recorder(self):
-		count = 0
-		while count < self.pathnum:
+	def update_recorder(self,output_cars):
+		count = int(MAX_PATH - self.pathnum)
+		# print "[update recorder] count : %s"%count 
+		# if self.recorder.has_key(MAX_PATH-1):
+		# 	logging.info("[update recorder] before self.recorder[MAX_PATH-1]: %s"%self.recorder[MAX_PATH-1])
+		self.volume.append(len(output_cars))
+		while count < MAX_PATH:
 			if self.recorder.has_key(count):
-				self.recorder[count].append(self.path_map[count])
+				self.recorder[count].append(copy.deepcopy(self.path_map[count] ))
 			else:
-				self.recorder[count] = [self.path_map[count]]
+				# print "[update recorder] self.path_map[count] : %s"%self.path_map[count]
+				self.recorder[count] = [copy.deepcopy(self.path_map[count] )]
 			count = count + 1
+		# logging.info("[update recorder]  self.recorder[MAX_PATH-1]: %s"%self.recorder[MAX_PATH-1])
 
 	def find_nearest_car(self,amount,direction,lanes,place):
 		"""
@@ -216,12 +300,16 @@ class Path(object):
 		return car_list
 
 
-	def plot(self,line_number,count_max):
-		count =1
+	def plot(self,line_number,count_max,path_num):
+		count =2
+		plt.figure(path_num)
 		while(count <= count_max):
 			x = []
 			y = []
 			for index, path_list in enumerate(self.recorder[line_number]):
+				# if count == 3:
+					# logging.info("[route.plot] self.recorder[line_number]:%s"%self.recorder[line_number])
+				
 				appear = False
 				try:
 					place = path_list.index(count)
@@ -234,7 +322,7 @@ class Path(object):
 						break
 			plt.plot(x,y,'k-')
 			count = count + 1
-		plt.title("time-space",fontsize=15)
+		plt.title("time-space in single path",fontsize=15)
 		plt.xlabel("space")
 		plt.ylabel("time", fontsize=15)
 		plt.show()

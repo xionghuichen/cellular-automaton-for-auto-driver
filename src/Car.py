@@ -3,11 +3,12 @@
 
 # Author      :   Xionghui Chen
 # Created     :   2017.1.21
-# Modified    :   2017.1.22
+# Modified    :   2017.1.23
 # Version     :   1.0
 # structure.py
 import logging
 from functions import do_probability_test
+from Global import MAX_PATH
 """
 车的基类
 """
@@ -17,8 +18,7 @@ class BasicCar(object):
 		self.velocity=init_vel # 当前行驶速度
 		self.max_velocity=car_info['max_velocity']# 车辆的限制速度
 		self.length=car_info['length']# 车辆长度
-		self.location=[0,0]# 车辆当前的位置，在路段的多个车道内定义:[x,y]
-		self.lanes = 0# 车辆当前车道数
+		self.location=[MAX_PATH,0]# 车辆当前的位置，在路段的多个车道内定义:[x,y]
 		self.accelerate=1# 车辆的等效加速度
 		self.slow_rate = car_info['slow_rate']
 		self.slow_rate_low = 0.01
@@ -149,6 +149,8 @@ class BasicCar(object):
 		logging.info("vn after slow is %s"%vn)	
 		return self.location
 		
+	def update_direction(self, around_cars)
+
 class NoAutoCar(BasicCar):
     def __init__(self, *argc, **argkw):
         super(NoAutoCar, self).__init__(*argc, **argkw)  
