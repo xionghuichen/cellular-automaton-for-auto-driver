@@ -235,13 +235,13 @@ class Path(object):
 			# 	continue
 			forward_cars = self.find_nearest_car(2,1,lanes,place)
 			# back_cars = self.find_nearest_car(1,-1,car.get_lanes(),car.get_place())
-			new_location = car.update_status(forward_cars)
+			(vn, new_location) = car.update_status(forward_cars)
 			# 清空历史状态
-			change_map.append([lanes,place,0])
+			change_map.append([copy.deepcopy(lanes),copy.deepcopy(place),0,vn])
 			# 如果新的location过大，则说明已经离开这个地方了
 			if new_location[1] < self.cell_amount:
 				# 记录新状态
-				change_map.append([new_location[0],new_location[1],car_id])
+				change_map.append([new_location[0],new_location[1],car_id,vn])
 			else:
 				output_cars[car_id] = car
 
@@ -251,10 +251,17 @@ class Path(object):
 			# 清空本轮被随机清除的车辆
 			del self.car_dictory[item]
 		for item in change_map:
-			# print "[update.change_map], item[0] %s"%item[0]
-			# print "[update.change_map], item[1] %s"%item[1]
-			# print "[update.change_map], item[2] %s"%item[2]
+			print "[update.change_map], item[0] %s"%item[0]
+			print "[update.change_map], item[1] %s"%item[1]
+			print "[update.change_map], item[2] %s"%item[2]
+			print "[update.change_map], item[3] %s"%item[3]
+			print "[update.change_map], length path_map[item[0]]: %s"%len(self.path_map[item[0]])
+			print "[update.change_map],self.cell_amount: %s"%self.cell_amount
 			self.path_map[item[0]][item[1]] = item[2]
+			# 不用于清空，而是更新这个车子的信息
+			if item[2] != 0:
+				car = self.car_dictory[item[2]]
+				car.update_infomation(item[3])
 		self.update_recorder(output_cars)
 		return output_cars
 

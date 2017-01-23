@@ -26,17 +26,7 @@ class BasicCar(object):
 		self.safe_distance = car_info['safe_distance']
 		self.slow_rate_high = 0.75
 
-	def change_lanes(self, around_cars):	
-		"""
-			around_cars: include 
-				left_forward_car,
-				left_back_car, 
-				right_forward_car, 
-				right_back_car
-			根据左右最近车的位置情况做出车道变道决策
-			1. 首先考虑右车道
-				- 右车道和当前车道的距离大于其最大速度所行驶的距离
-		"""
+
 	def set_location(self,lanes,place):
 		"""
 			设置车辆的位置
@@ -51,11 +41,12 @@ class BasicCar(object):
 		return self.location[0]
 
 
-	def update_place(self):
+	def update_infomation(self, vn):
 		"""
 			设置新的坐标位置
 		"""
-		self.location[1] = self.location[1] + self.velocity
+		self.velocity = vn
+		self.location[1] = self.location[1] + vn
 
 	def get_place(self):
 		"""
@@ -88,6 +79,49 @@ class BasicCar(object):
 	def do_slow(self,vn):
 		return max(vn-self.slow_velocity,0)
 
+	def change_lanes(self, around_cars, has_token, lance_amount):	
+		"""
+			lance_amount:总的车道的数目
+			has_token:已经被占据的格子
+			around_cars: include 
+				'l+':left_forward_car,
+				'l-':left_back_car, 
+				'r+':right_forward_car, 
+				'r-':right_back_car
+			根据左右最近车的位置情况做出车道变道决策
+			b. 换车道思考过程：
+				i. 三车道换道模型
+					1) 如果右车道安全，且比当前车道车况好[车距更大]，就换右车道
+					2) 右车道路况没有比当前路况好，那么
+						a) 如果左车道安全
+						b) 当前车道不满足行驶条件
+						c) 左车道路况比当前路况好
+						d) 满足以上所有条件，换左车道
+					3) 做出最后的换道决策，前面只是做出思考，有Pignore的概率拒绝换道[模拟人的因素]
+					4) 这部分私家车和自动驾驶汽车暂时没有思考出区别
+				ii. 考虑鸣笛效应
+					1) 当n号车后面的车满足以下条件的时候，对n号车鸣笛
+						a) n号车无法正常速度行驶
+						b) n号车无法换道
+					2) 当n号车被鸣笛之后：
+						a) 如果右车道安全，且比当前车道车况好，就换右车道
+						b) 如果右车道不能换，那么
+							i) 如果左车道安全
+							ii) 左车道满足当前的行驶条件[速度满足当前的速度]
+						c) 决定换左车道
+					3) 上面只是做出思考，没有做出最终决策，有Pignore的概率拒绝换道[模拟人的因素]
+					4) 换道环节结束之后进入单车道思考过程
+		"""
+		# 考虑右边车道
+		#if self.location[0] - 1 >= MAX_PATH - lance_amount:
+		# try:
+		# 	right_location = [self.location[0] - 1, self.location[1]]
+
+		# 考虑左边车道
+		#if self.location[0] + 1 < MAX_PATH
+		# 换道决策
+		pass
+
 	def update_status(self, around_cars):
 		"""
 			around_cars: include 
@@ -112,9 +146,9 @@ class BasicCar(object):
 			v. 注意，这之前的步骤是每个步骤都要走一遍的，直到最后一步完成之后，再更新状态
 		"""
 		# 加速
-		logging.info("velocity is %s"%self.velocity)
-		logging.info("forward car number is %s"%len(around_cars))
-		logging.info("location is :%s"%self.location)
+		# logging.info("velocity is %s"%self.velocity)
+		# logging.info("forward car number is %s"%len(around_cars))
+		# logging.info("location is :%s"%self.location)
 
 		vn = min(self.velocity+self.accelerate, self.max_velocity)
 		# 减速
@@ -129,11 +163,11 @@ class BasicCar(object):
 				max(around_cars[0].max_velocity - self.safe_distance,around_cars[0].length),
 				max(around_cars[0].velocity - self.safe_distance,around_cars[0].length),
 				999999)
-			logging.info("v forward imaginary is :%s"%v_forward_imaginary)
+			# logging.info("v forward imaginary is :%s"%v_forward_imaginary)
 		if len(around_cars) != 0:
-			logging.info("distance is :%s"%self.get_distance(around_cars[0]))
+			# logging.info("distance is :%s"%self.get_distance(around_cars[0]))
 			vn = min(vn,self.get_distance(around_cars[0])+v_forward_imaginary)
-		logging.info("vn before slow is %s"%vn)	
+		# logging.info("vn before slow is %s"%vn)	
 			# 这辆车前面没有车，不会受限制
 		# 随机慢化
 		# 计算当前随机漫画概率
@@ -142,14 +176,10 @@ class BasicCar(object):
 			# 进行随机慢化
 			vn = self.do_slow(vn)
 		# 更新速度
-		self.velocity = vn
-		# 更新坐标
-		self.update_place()
 		# 返回更新后的坐标
-		logging.info("vn after slow is %s"%vn)	
-		return self.location
-		
-	def update_direction(self, around_cars)
+		# logging.info("vn after slow is %s"%vn)	
+		return (vn, [self.location[0], self.location[1]+vn])
+
 
 class NoAutoCar(BasicCar):
     def __init__(self, *argc, **argkw):
