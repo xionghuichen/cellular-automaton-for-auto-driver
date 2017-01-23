@@ -15,6 +15,7 @@ import numpy as np
 import random
 import json
 import logging
+from matplotlib import pyplot as plt
 class Route(object):
 	def __init__(self,route_id,resource_item_list, time_slice):
 		"""
@@ -53,25 +54,37 @@ class Road(object):
 		self.inc_path=Path(self.increase_dir, self.startpost, self.endpost)
 		self.dec_path=Path(self.decrease_dir, self.startpost, self.endpost)
 
-	def get_Singleton_peak(self,last_amount):
+	def get_Singleton_peak(self,last_amount,direction='up'):
 		if self.acc_bi_peak== []:
 			self.peak_amount_per_hours = self._peak_amount_per_hours(last_amount)
 			probability_of_single_car = (self.peak_amount_per_hours/3600*self.time_slice)/(3600*self.time_slice)
-			self.acc_bi_peak = binomial_creator(self.peak_amount_per_hours,probability_of_single_car)
+			if direction == 'up':
+				probability_of_single_car = probability_of_single_car * self.increase_dir
+				amount_per_hours = self.peak_amount_per_hours* self.increase_dir
+			else:
+				probability_of_single_car = probability_of_single_car * self.decrease_dir
+				amount_per_hours = self.peak_amount_per_hours* self.decrease_dir
+			self.acc_bi_peak = binomial_creator(amount_per_hours,probability_of_single_car)
 		return self.acc_bi_peak
 
-	def get_Singleton_no_peak(self,last_amount):
+	def get_Singleton_no_peak(self,last_amount,direction='up'):
 		if self.acc_bi_no_peak== []:
 			self.peak_amount_per_hours = self._peak_amount_per_hours()
 			probability_of_single_car = (self.peak_amount_per_hours/3600*self.time_slice)/(3600*self.time_slice)
-			self.acc_bi_no_peak = binomial_creator(self.peak_amount_per_hours,probability_of_single_car)
+			if direction == 'up':
+				probability_of_single_car = probability_of_single_car * self.increase_dir
+				amount_per_hours = self.peak_amount_per_hours* self.increase_dir
+			else:
+				probability_of_single_car = probability_of_single_car * self.decrease_dir
+				amount_per_hours = self.peak_amount_per_hours* self.decrease_dir
+			self.acc_bi_no_peak = binomial_creator(amount_per_hours, probability_of_single_car)
 		return self.acc_bi_no_peak
 	
 	def _peak_amount_per_hours(self, last_amount):
-		return (self.traffic_amount - last_amount)* self.peak_ratio / self.peak_hours
+		return (self.traffic_amount - last_amount)* self.peak_ratio / self.peak_hours/(self.increase_dir + self.decrease_dir)
 
 	def _no_peak_amount_per_hours(self, last_amount):
-		return (self.traffic_amount - last_amount) * self.no_peak_ratio / self.no_peak_hours
+		return (self.traffic_amount - last_amount) * self.no_peak_ratio / self.no_peak_hours/(self.increase_dir + self.decrease_dir)
 
 class Path(object):
 
@@ -203,3 +216,25 @@ class Path(object):
 		return car_list
 
 
+	def plot(self,line_number,count_max):
+		count =1
+		while(count <= count_max):
+			x = []
+			y = []
+			for index, path_list in enumerate(self.recorder[line_number]):
+				appear = False
+				try:
+					place = path_list.index(count)
+					appear = True
+					x.append(place)
+					y.append(index)
+				except Exception as e:
+					if appear:
+						# 车消失了
+						break
+			plt.plot(x,y,'k-')
+			count = count + 1
+		plt.title("time-space",fontsize=15)
+		plt.xlabel("space")
+		plt.ylabel("time", fontsize=15)
+		plt.show()

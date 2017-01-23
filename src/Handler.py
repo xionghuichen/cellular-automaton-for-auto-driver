@@ -19,7 +19,7 @@ class CellularHandler(object):
 	def __init__(self,fp, car_ratio):
 		self.route_list = {}
 		self.result_dict = {}
-		self.time_slice = 2
+		self.time_slice = 1
 		self.car_acc_probility = accumulator(car_ratio)
 		self._resource_filter(fp)
 		self._route_creator()
@@ -129,12 +129,14 @@ class CellularHandler(object):
 			元胞驱动器，用来启动所有程序流程
 		"""
 		count = 0 
-		while count < 100:
+		while count < 1000:
 			self.itertor(self.route_list[route_id],'up')
 			count = count + 1
 			print "driver count is :%s"%count
 		for item in self.route_list[route_id].road_list[0].inc_path.recorder[0]:
 			logging.info(item)
+		self.route_list[route_id].road_list[0].inc_path.plot(0,self.car_id_count)
+
 
 	def itertor(self, route,direction):
 		"""

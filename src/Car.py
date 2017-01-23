@@ -24,7 +24,7 @@ class BasicCar(object):
 		self.slow_rate_low = 0.01
 		self.slow_velocity = 1
 		self.safe_distance = car_info['safe_distance']
-
+		self.slow_rate_high = 0.75
 
 	def change_lanes(self, around_cars):	
 		"""
@@ -78,8 +78,10 @@ class BasicCar(object):
 		"""
 			获得随机慢化概率
 		"""
-		if vn == self.max_velocity or vn ==0:
+		if vn == self.max_velocity :
 			return self.slow_rate_low
+		elif vn ==0:
+			return self.slow_rate_high
 		else:
 			return self.slow_rate
 
