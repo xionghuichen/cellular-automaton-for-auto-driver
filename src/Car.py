@@ -25,7 +25,7 @@ class BasicCar(object):
 		self.slow_velocity = 1
 		self.safe_distance = car_info['safe_distance']
 		self.slow_rate_high = 0.75
-
+		self.turn_rate = 0.7
 
 	def set_location(self,lanes,place):
 		"""
@@ -79,7 +79,7 @@ class BasicCar(object):
 	def do_slow(self,vn):
 		return max(vn-self.slow_velocity,0)
 
-	def change_lanes(self, around_cars, has_token, lance_amount):	
+	def change_lance(self, around_cars):	
 		"""
 			lance_amount:总的车道的数目
 			has_token:已经被占据的格子
@@ -113,16 +113,58 @@ class BasicCar(object):
 					4) 换道环节结束之后进入单车道思考过程
 		"""
 		# 考虑右边车道
-		#if self.location[0] - 1 >= MAX_PATH - lance_amount:
-		# try:
-		# 	right_location = [self.location[0] - 1, self.location[1]]
+		if around_cars['+'] == []:
+			# 前面没有车，不需要转弯
+			return 0
+		turn = 0
+		result1 = False
+		result2 = False
+		if around_cars['r']:
+			result1 = False
+			if around_cars['r-'] != []:
+				if self.get_distance(around_cars['r-'][0]) > around_cars['r-'][0].max_velocity:
+					result1 = True
+			else:
+				result1 = True
+			result2 = False
+			if around_cars['r-'] != []:
+				if self.get_distance(around_cars['r-'][0]) > self.get_distance(around_cars['+'][0]):
+					result2 = True
+			else:
+				result2 = True
+		if result1 and result2:
+			turn = -1
 
 		# 考虑左边车道
-		#if self.location[0] + 1 < MAX_PATH
-		# 换道决策
-		pass
+		result1 = False
+		result2 = False
+		result3 = False
+		if turn == 0 and around_cars['l']:
+			result1 = False
+			if around_cars['l-'] != []:
+				if self.get_distance(around_cars['l-'][0]) > around_cars['l-'][0].max_velocity:
+					result1 = True
+			else:
+				result1 = True
+			result2 = False
+			result3 = False
+			if around_cars['l+'] != []:
+				if self.get_distance(around_cars['+'][0]) < min(self.velocity+1,self.max_velocity) or self.velocity == 0:
+					result2 =True
+				if self.get_distance(around_cars['l+'][0]) > self.get_distance(around_cars['+'][0]):
+					result3 = True
+			else:
+				result2 = True
+		if result1 and result2 and result3:
+			turn = 1
 
-	def update_status(self, around_cars):
+		if turn !=0:
+			# 有几率满足条件也不转弯
+			if not do_probability_test(self.turn_rate):
+				turn = 0
+		return turn
+
+	def update_status(self, around_cars,turn = 0):
 		"""
 			around_cars: include 
 				forward_cars ：观察两辆
@@ -149,7 +191,7 @@ class BasicCar(object):
 		# logging.info("velocity is %s"%self.velocity)
 		# logging.info("forward car number is %s"%len(around_cars))
 		# logging.info("location is :%s"%self.location)
-
+		self.location[0] = self.location[0]+turn
 		vn = min(self.velocity+self.accelerate, self.max_velocity)
 		# 减速
 		if len(around_cars) == 2:

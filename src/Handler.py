@@ -142,13 +142,12 @@ class CellularHandler(object):
 			元胞驱动器，用来启动所有程序流程
 		"""
 		count = 0 
-		while count < 500:
+		while count < 100:
 			self.itertor(self.route_list[route_id],'up')
 			count = count + 1
 			print "driver count is :%s"%count
-		# for item in self.route_list[route_id].road_list[0].inc_path.recorder[0]:
-		# 	logging.info(item)
-		self.route_list[route_id].plot(MAX_PATH - 1,self.car_id_count)
+		logging.info(self.route_list[route_id].road_list[0].inc_path.recorder)
+		self.route_list[route_id].plot(self.car_id_count)
 
 	def itertor(self, route, direction):
 		"""
