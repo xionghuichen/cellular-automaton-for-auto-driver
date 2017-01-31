@@ -10,44 +10,27 @@ import json
 from Route import Route
 import random
 from functions import multi_probility_test, accumulator, do_probability_test
-from Global import cars_info, MAX_PATH
+from Global import CARS_INFO, MAX_PATH
 from Car import NoAutoCar
 import logging
 
 class CellularHandler(object):
 
-	def __init__(self,fp, car_ratio):
+	def __init__(self,data, car_ratio):
 		self.route_list = {}
-		self.result_dict = {}
 		self.time_slice = 1
 		self.car_acc_probility = accumulator(car_ratio)
-		self._resource_filter(fp)
+		self._resource_filter(data)
 		self._route_creator()
 		self.car_id_count = 2
 		self.remain_rate = 1
 
-	def _route_creator(self):
+	def _resource_filter(self,data):
 		"""
 			构造线路列表
 		"""
-		for key,item in self.result_dict.items():
-			self.route_list[key] = Route(key,item,self.time_slice)
-
-
-	def _resource_filter(self,fp):
-		"""
-			提取原始数据中有用的数据
-		"""
-		#获取行数
-		nrows = fp.nrows
-		for i in range(1,nrows):
-		    row_data = fp.row_values(i)
-		    if self.result_dict.has_key(row_data[0]):
-		    	# 不是第一个数据
-		    	self.result_dict[row_data[0]].append(row_data[1:])
-		    else:
-		    	# 是第一个数据
-		    	self.result_dict[row_data[0]] = [row_data[1:]]
+		for item in data:
+			self.route_list[item['id']] = Route(item['id'],item)
 
 	def next_car_id(self):
 		"""
@@ -81,7 +64,7 @@ class CellularHandler(object):
 			while(count < car_amount):
 				# 产生对应类型的汽车
 				car_type = multi_probility_test(self.car_acc_probility)
-				single_car_info = cars_info[car_type]
+				single_car_info = CARS_INFO[car_type]
 				max_vel = single_car_info['max_velocity']
 				# [todo] 正太分布
 				init_vel = random.randint(2, max_vel/3)
@@ -116,7 +99,7 @@ class CellularHandler(object):
 			while(count < car_amount):
 				# 产生对应类型的汽车
 				car_type = multi_probility_test(self.car_acc_probility)
-				single_car_info = cars_info[car_type]
+				single_car_info = CARS_INFO[car_type]
 				max_vel = single_car_info['max_velocity']
 				init_vel = random.randint(0, max_vel)
 				if single_car_info['type']==0:
@@ -146,7 +129,7 @@ class CellularHandler(object):
 			self.itertor(self.route_list[route_id],'up')
 			count = count + 1
 			print "driver count is :%s"%count
-		logging.info(self.route_list[route_id].road_list[0].inc_path.recorder)
+		# logging.info(self.route_list[route_id].path_list[0].inc_path.recorder)
 		self.route_list[route_id].plot(self.car_id_count)
 
 	def itertor(self, route, direction):
@@ -162,21 +145,21 @@ class CellularHandler(object):
 		last_road = 0
 		#[todo] 将上个车道的output加入这个车道的input
 		output_cars = 0
-		for index, road in enumerate(route.road_list):
-			if index < len(route.road_list) - 1:
+		for index, path in enumerate(route.path_list):
+			if index < len(route.path_list) - 1:
 				# 设置保留率，如果从不拥堵的路段过渡到拥堵的路段，则有保留率，否则，保留率为1
-				next_road = route.road_list[index+1]
-				rate = (road.car_volume()/next_road.car_volume())
+				next_path = route.path_list[index+1]
+				rate = (path.car_volume()/next_path.car_volume())
 
 				if rate >1:
-					self.remain_rate =  (next_road.car_volume()/road.car_volume())
+					self.remain_rate =  (next_path.car_volume()/path.car_volume())
 				else:
 					self.remain_rate = rate
-			car_dictory = self.car_creator(road,last_road,output_cars,direction)
-			output_cars = self.update(road,car_dictory,direction)
-			last_road = road
+			car_dictory = self.car_creator(path,last_path,output_cars,direction)
+			output_cars = self.update(path,car_dictory,direction)
+			last_path = path
 
-	def update(self,road, car_dictory,direction):
+	def update(self,path, car_dictory,direction):
 		"""
 			操作一个道路路段的更新
 			1. 按照概率分布和上一个路段对本路段的影响创造汽车
@@ -187,7 +170,6 @@ class CellularHandler(object):
 			4. 返回更新结果
 		"""
 		if direction =='up':
-			path = road.inc_path
 			logging.info("[handler.update]update car_dictory is :%s"%car_dictory)
 			for car_id,car in car_dictory.items():
 				# car.change_lanes()

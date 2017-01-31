@@ -18,18 +18,18 @@ import logging
 from matplotlib import pyplot as plt
 
 from functions import binomial_creator, do_probability_test
-from Global import MAX_PATH, cars_info
+from Global import MAX_PATH, CARS_INFO, TIME_SLICE
 from Car import NoAutoCar
 class Route(object):
-	def __init__(self,route_id,resource_item_list, time_slice):
+	def __init__(self,route_id,resource_item_list):
 		"""
 		构造道路路段
 		"""
 		self.route_id = route_id# 该路线的id
 		self.route_amount = len(resource_item_list)# 改路线拥有的道路的个数 
-		self.road_list =[]# 构造每一个道路路段的数据结构
+		self.path_list =[]# 构造每一个道路路段的数据结构
 		for value in resource_item_list:
-			self.road_list.append(Road(value, time_slice))
+			self.path_list.append(Path(value))
 
 	def plot(self,count_max,direction='up'):
 		if direction =='up':
@@ -43,7 +43,7 @@ class Route(object):
 					last_cell_amount = 0
 					appear = False
 					disappear = False
-					for path_num, road in enumerate(self.road_list):
+					for path_num, road in enumerate(self.path_list):
 						path = road.inc_path
 						for index, path_list in enumerate(path.recorder[line_number]):
 							if count == 3 and line_number == 1 and path_num == 1:
@@ -82,7 +82,7 @@ class Route(object):
 		# 			x = []
 		# 			y = []
 		# 			last_cell_amount = 0
-		# 			for path_num, road in enumerate(self.road_list):
+		# 			for path_num, road in enumerate(self.path_list):
 		# 				path = road.inc_path
 		# 				for index, path_list in enumerate(path.recorder[4]):
 		# 					# if count == 3:
@@ -110,63 +110,61 @@ class Route(object):
 """
 公路段类，包含了两个方向的公路,对应excel的一调数据
 """
-class Road(object):
-	def __init__(self,resource_item, time_slice):
-		"""
-			构造一个路段
-		"""
-		self.startpost = resource_item[0]# A marker on the road that measures distance in miles from either the start of the route or a state boundary.
-		self.endpost = resource_item[1]# The average number of cars per day driving on the road.
-		self.traffic_amount = resource_item[2]# average daily traffic
-		self.tre_type = resource_item[3]# interstate or state route 
-		self.decrease_dir = resource_item[4]# Northbound for N-S roads, Eastbound for E-W roads.
-		self.increase_dir = resource_item[5]# Southbound for N-S roads,  Westbound for E-W roads.
-		self.peak_hours=2
-		self.no_peak_hours = 18
-		self.peak_ratio = 0.08
-		self.no_peak_ratio = 0.8
-		self.time_slice = time_slice
-		# self.no_peak_amount_per_hours = self._no_peak_amount_per_hours()
-		# 累加的二项分布概率
-		self.acc_bi_peak = []
-		self.acc_bi_no_peak = []
-		self.inc_path=Path(self.increase_dir, self.startpost, self.endpost)
-		self.dec_path=Path(self.decrease_dir, self.startpost, self.endpost)
+# class Road(object):
+# 	def __init__(self,):
+# 		"""
+# 			构造一个路段
+# 		"""
+# 		self.startpost = resource_item['startpost']# A marker on the road that measures distance in miles from either the start of the route or a state boundary.
+# 		self.endpost = resource_item['endpost']# The average number of cars per day driving on the road.
+# 		self.traffic_amount = resource_item['density']# average daily traffic
+# 		self.path_number = resource_item['path_number']
+# 		self.peak_hours=2
+# 		self.no_peak_hours = 18
+# 		self.peak_ratio = 0.08
+# 		self.no_peak_ratio = 0.8
+# 		self.time_slice = TIME_SLICE
+# 		# self.no_peak_amount_per_hours = self._no_peak_amount_per_hours()
+# 		# 累加的二项分布概率
+# 		self.acc_bi_peak = []
 
-	def get_Singleton_peak(self,last_amount,direction='up'):
-		if self.acc_bi_peak== []:
-			self.peak_amount_per_hours = self._peak_amount_per_hours(last_amount)
-			probability_of_single_car = (self.peak_amount_per_hours/3600*self.time_slice)/(3600*self.time_slice)
-			if direction == 'up':
-				probability_of_single_car = probability_of_single_car * self.increase_dir
-				amount_per_hours = self.peak_amount_per_hours* self.increase_dir
-			else:
-				probability_of_single_car = probability_of_single_car * self.decrease_dir
-				amount_per_hours = self.peak_amount_per_hours* self.decrease_dir
-			self.acc_bi_peak = binomial_creator(amount_per_hours,probability_of_single_car)
-		return self.acc_bi_peak
+# 		# self.inc_path=Path(self.increase_dir, self.startpost, self.endpost)
+# 		# self.dec_path=Path(self.decrease_dir, self.startpost, self.endpost)
 
-	def get_Singleton_no_peak(self,last_amount,direction='up'):
-		if self.acc_bi_no_peak== []:
-			self.peak_amount_per_hours = self._peak_amount_per_hours()
-			probability_of_single_car = (self.peak_amount_per_hours/3600*self.time_slice)/(3600*self.time_slice)
-			if direction == 'up':
-				probability_of_single_car = probability_of_single_car * self.increase_dir
-				amount_per_hours = self.peak_amount_per_hours* self.increase_dir
-			else:
-				probability_of_single_car = probability_of_single_car * self.decrease_dir
-				amount_per_hours = self.peak_amount_per_hours* self.decrease_dir
-			self.acc_bi_no_peak = binomial_creator(amount_per_hours, probability_of_single_car)
-		return self.acc_bi_no_peak
+# 	def get_Singleton_peak(self,last_amount,direction='up'):
+# 		if self.acc_bi_peak== []:
+# 			self.peak_amount_per_hours = self._peak_amount_per_hours(last_amount)
+# 			probability_of_single_car = (self.peak_amount_per_hours/3600*self.time_slice)/(3600*self.time_slice)
+# 			if direction == 'up':
+# 				probability_of_single_car = probability_of_single_car * self.increase_dir
+# 				amount_per_hours = self.peak_amount_per_hours* self.increase_dir
+# 			else:
+# 				probability_of_single_car = probability_of_single_car * self.decrease_dir
+# 				amount_per_hours = self.peak_amount_per_hours* self.decrease_dir
+# 			self.acc_bi_peak = binomial_creator(amount_per_hours,probability_of_single_car)
+# 		return self.acc_bi_peak
+
+# 	def get_Singleton_no_peak(self,last_amount,direction='up'):
+# 		if self.acc_bi_no_peak== []:
+# 			self.peak_amount_per_hours = self._peak_amount_per_hours()
+# 			probability_of_single_car = (self.peak_amount_per_hours/3600*self.time_slice)/(3600*self.time_slice)
+# 			if direction == 'up':
+# 				probability_of_single_car = probability_of_single_car * self.increase_dir
+# 				amount_per_hours = self.peak_amount_per_hours* self.increase_dir
+# 			else:
+# 				probability_of_single_car = probability_of_single_car * self.decrease_dir
+# 				amount_per_hours = self.peak_amount_per_hours* self.decrease_dir
+# 			self.acc_bi_no_peak = binomial_creator(amount_per_hours, probability_of_single_car)
+# 		return self.acc_bi_no_peak
 	
-	def _peak_amount_per_hours(self, last_amount):
-		return ( self.car_volume() - last_amount )* self.peak_ratio / self.peak_hours
+# 	def _peak_amount_per_hours(self, last_amount):
+# 		return ( self.car_volume() - last_amount )* self.peak_ratio / self.peak_hours
 
-	def _no_peak_amount_per_hours(self, last_amount):
-		return (self.car_volume() - last_amount) * self.no_peak_ratio / self.no_peak_hours/(self.increase_dir + self.decrease_dir)
+# 	def _no_peak_amount_per_hours(self, last_amount):
+# 		return (self.car_volume() - last_amount) * self.no_peak_ratio / self.no_peak_hours/(self.increase_dir + self.decrease_dir)
 
-	def car_volume(self):
-		return self.traffic_amount /(self.increase_dir + self.decrease_dir)
+# 	def car_volume(self):
+# 		return self.traffic_amount /(self.increase_dir + self.decrease_dir)
 
 
 		
@@ -174,10 +172,11 @@ class Road(object):
 	构造一个一个方向的路，这个是一个元胞自动机进行模拟的单元
 """
 class Path(object):
-	def __init__(self,pathnum, startpost, endpost):
-		self.pathnum = pathnum
-		self.startpost = startpost
-		self.endpost = endpost
+	def __init__(self,resource_item):
+		self.pathnum = resource_item['path_number']
+		self.startpost = resource_item['startpost']
+		self.endpost = resource_item['endpost']
+		self.density = resource_item['density']
 		self.path_map = []# np.zeros(self.direction,self.endpost - self.startpost)
 		self.car_dictory = {}
 		self.mile_ratio = 1000
@@ -186,7 +185,7 @@ class Path(object):
 		self.volume = []
 		count = 0
 		# 创建虚拟车辆，即障碍物
-		self.car_dictory[1] = NoAutoCar(0, cars_info[1])
+		self.car_dictory[1] = NoAutoCar(0, CARS_INFO[1])
 		logging.info("[PATH] %s"%self.pathnum)
 		while count < MAX_PATH:
 			if count >= MAX_PATH - self.pathnum:
