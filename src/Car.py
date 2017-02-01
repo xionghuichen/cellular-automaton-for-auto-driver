@@ -3,69 +3,100 @@
 
 # Author      :   Xionghui Chen
 # Created     :   2017.1.21
-# Modified    :   2017.1.23
+# Modified    :   2017.2.1
 # Version     :   1.0
 # structure.py
 import logging
 from functions import do_probability_test
-from Global import MAX_PATH
+from Global import MAX_PATH, CELL_RATIO, TIME_SLICE
 """
 车的基类
 """
 class BasicCar(object):
 	
-	def __init__(self, init_vel,car_info):
-		self.velocity=init_vel # 当前行驶速度
-		self.max_velocity=car_info['max_velocity']# 车辆的限制速度
-		self.length=car_info['length']# 车辆长度
-		self.location=[MAX_PATH,0]# 车辆当前的位置，在路段的多个车道内定义:[x,y]
+	def __init__(self, init_vel,car_info, lanes=MAX_PATH, place=0):
+		self._velocity=init_vel # 当前行驶速度
+		self.max_velocity=int(car_info['max_velocity']/3600*CELL_RATIO*TIME_SLICE)# 车辆的限制速度
+		self.length=int(car_info['length']*CELL_RATIO)# 车辆长度
+		self._location=[lanes,place]# 车辆当前的位置，在路段的多个车道内定义:[x,y]
 		self.accelerate=1# 车辆的等效加速度
 		self.slow_rate = car_info['slow_rate']
 		self.slow_rate_low = 0.01
 		self.slow_velocity = 1
-		self.safe_distance = car_info['safe_distance']
+		self.safe_distance = 0# car_info['safe_distance']
 		self.slow_rate_high = 0.75
 		self.turn_rate = 0.7
 
-	def set_location(self,lanes,place):
+
+	@property
+	def velocity(self):
+		return self._velocity
+
+	@velocity.setter
+	def velocity(self,value):
+		if value<0:
+			raise Exception("velocity error velocity is %s"%value)
+		self._velocity = value
+
+	@property
+	def location(self):
+		return self._location
+
+	@location.setter
+	def location(self,value):
 		"""
 			设置车辆的位置
 		"""
-		self.location[0] = lanes
-		self.location[1] = place
+		if value[0] < 0 or value[1] < 0:
+			raise Exception("location error lanes is %s, place is %s"%(value[0],value[1])) 
+		self._location[0] = value[0]
+		self._location[1] = value[1]
 
-	def get_lanes(self):
+	@property
+	def place(self):
+		return self._location[1]
+
+	@place.setter
+	def place(self,place):
+		if place<0:
+			raise Exception("place error place is %s"%place)
+		self._location[1] = place
+
+	@property
+	def lanes(self):
 		"""
 			返回该车辆现在所在的车道位置
 		"""
-		return self.location[0]
+		return self._location[0]
 
+	@lanes.setter
+	def lanes(self, value):
+		if value<0:
+			raise Exception("place error lanes is %s"%value)
+		self._location[0] = value
+
+	def car_info(self):
+		return "location is %s, velocity is %s, length is %s"%(self.location, self.velocity, self.length)
 
 	def update_infomation(self, vn):
 		"""
 			设置新的坐标位置
 		"""
 		self.velocity = vn
-		self.location[1] = self.location[1] + vn
+		self.place = self.place + vn
 
-	def get_place(self):
-		"""
-			返回该辆车现在所在的前进的位置
-		"""
-		return self.location[1]
-
-	def get_distance(self, another_car):
+	def calculate_distance(self, another_car):
 		"""
 			headway = 两辆车的坐标差- 前面的车的长度
 		"""
-		distance = abs(another_car.location[1] - self.location[1])
-		if self.get_place() > another_car.get_place():
+		distance = abs(another_car.place - self.place)
+		if self.place > another_car.place:
 			length = self.length
 		else:
 			length = another_car.length
 		return distance - length
 
-	def get_slow_rate(self,vn):
+	def calculate_slow_rate(self,vn):
 		"""
 			获得随机慢化概率
 		"""
@@ -122,13 +153,13 @@ class BasicCar(object):
 		if around_cars['r']:
 			result1 = False
 			if around_cars['r-'] != []:
-				if self.get_distance(around_cars['r-'][0]) > around_cars['r-'][0].max_velocity:
+				if self.calculate_distance(around_cars['r-'][0]) > around_cars['r-'][0].max_velocity:
 					result1 = True
 			else:
 				result1 = True
 			result2 = False
 			if around_cars['r-'] != []:
-				if self.get_distance(around_cars['r-'][0]) > self.get_distance(around_cars['+'][0]):
+				if self.calculate_distance(around_cars['r-'][0]) > self.calculate_distance(around_cars['+'][0]):
 					result2 = True
 			else:
 				result2 = True
@@ -142,16 +173,16 @@ class BasicCar(object):
 		if turn == 0 and around_cars['l']:
 			result1 = False
 			if around_cars['l-'] != []:
-				if self.get_distance(around_cars['l-'][0]) > around_cars['l-'][0].max_velocity:
+				if self.calculate_distance(around_cars['l-'][0]) > around_cars['l-'][0].max_velocity:
 					result1 = True
 			else:
 				result1 = True
 			result2 = False
 			result3 = False
 			if around_cars['l+'] != []:
-				if self.get_distance(around_cars['+'][0]) < min(self.velocity+1,self.max_velocity) or self.velocity == 0:
+				if self.calculate_distance(around_cars['+'][0]) < min(self.velocity+1,self.max_velocity) or self.velocity == 0:
 					result2 =True
-				if self.get_distance(around_cars['l+'][0]) > self.get_distance(around_cars['+'][0]):
+				if self.calculate_distance(around_cars['l+'][0]) > self.calculate_distance(around_cars['+'][0]):
 					result3 = True
 			else:
 				result2 = True
@@ -191,14 +222,14 @@ class BasicCar(object):
 		# logging.info("velocity is %s"%self.velocity)
 		# logging.info("forward car number is %s"%len(around_cars))
 		# logging.info("location is :%s"%self.location)
-		self.location[0] = self.location[0]+turn
+		self.lanes = self.lanes+turn
 		vn = min(self.velocity+self.accelerate, self.max_velocity)
 		# 减速
 		if len(around_cars) == 2:
 			v_forward_imaginary = min(
 				around_cars[0].max_velocity - self.safe_distance,
 				max(around_cars[0].velocity - self.safe_distance,0),
-				max(0,around_cars[0].get_distance(around_cars[1]) - self.safe_distance))
+				max(0,around_cars[0].calculate_distance(around_cars[1]) - self.safe_distance))
 		elif len(around_cars) == 1:
 			#这辆车前面只有一辆车，第三项消除
 			v_forward_imaginary = min(
@@ -207,22 +238,26 @@ class BasicCar(object):
 				999999)
 			# logging.info("v forward imaginary is :%s"%v_forward_imaginary)
 		if len(around_cars) != 0:
-			# logging.info("distance is :%s"%self.get_distance(around_cars[0]))
-			vn = min(vn,self.get_distance(around_cars[0])+v_forward_imaginary)
+			# logging.info("distance is :%s"%self.calculate_distance(around_cars[0]))
+			vn = min(vn,self.calculate_distance(around_cars[0])+v_forward_imaginary)
 		# logging.info("vn before slow is %s"%vn)	
 			# 这辆车前面没有车，不会受限制
 		# 随机慢化
 		# 计算当前随机漫画概率
-		slow_rate = self.get_slow_rate(vn)
+		slow_rate = self.calculate_slow_rate(vn)
 		if do_probability_test(slow_rate):
 			# 进行随机慢化
 			vn = self.do_slow(vn)
 		# 更新速度
 		# 返回更新后的坐标
 		# logging.info("vn after slow is %s"%vn)	
-		return (vn, [self.location[0], self.location[1]+vn])
+		return (vn, [self.lanes, self.place + vn])
 
 
 class NoAutoCar(BasicCar):
     def __init__(self, *argc, **argkw):
         super(NoAutoCar, self).__init__(*argc, **argkw)  
+
+class AutoCar(BasicCar):
+    def __init__(self, *argc, **argkw):
+        super(AutoCar, self).__init__(*argc, **argkw)  
