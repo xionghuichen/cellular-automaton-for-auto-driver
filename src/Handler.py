@@ -156,7 +156,7 @@ class CellularHandler(object):
 				path.add_init_car(new_car, car_id)
 				count = count + 1
 		count = 0
-		while count < 5:
+		while count < 80:
 			self.itertor(self.route_list[route_id])
 			count = count + 1
 			print "driver count is :%s"%count
@@ -199,8 +199,8 @@ class CellularHandler(object):
 			last_path = path
 		# 更新一遍之后，我们需要把最后一个路段结尾的ouput的车子加入第一个路段中，并且，我们需要更新他的car_id
 		output_cars = self._update_cars(output_cars)
-		self.to_next_path(route.path_list[0],last_path,output_cars)
-
+		car_dictory = self.to_next_path(route.path_list[0],last_path,output_cars)
+		output_cars = self.update(route.path_list[0],car_dictory)
 
 	def update(self,path, car_dictory):
 		"""

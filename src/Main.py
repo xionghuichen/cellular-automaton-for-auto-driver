@@ -10,7 +10,7 @@
 
 #encoding=utf-8
 # import pudb; pu.db
-import xlrd
+import xlrd 
 import xlwt
 import json
 fname = "../Resource/2017_MCM_Problem_C_Data2.xlsx"
@@ -42,7 +42,7 @@ for i in range(1,nrows):
     peak_ratio = 0.08
     peak_hours = 3
     direct_selected = row_data[6]
-    volume_per_hours = row_data[3] * peak_ratio / peak_hours / (row_data[5] + row_data[6]) * 1.5
+    volume_per_hours = row_data[3] * peak_ratio / peak_hours / (row_data[5] + row_data[6]) * 2
     avg_velocity = sum([a['max_velocity']*b for a,b in zip(CARS_INFO,ratios)])
     avg_length = sum([a['length']*b for a,b in zip(CARS_INFO,ratios)])
     max_density = 1/avg_length

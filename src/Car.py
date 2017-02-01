@@ -94,6 +94,10 @@ class BasicCar(object):
 			length = self.length
 		else:
 			length = another_car.length
+		if distance - length < 0:
+			logging.info("[calculate distance], distance is %s, length is %s"%(distance,length))
+			return 0
+			# raise Exception("error in calculate distance, distance is %s, length is %s"%(distance,length))
 		return distance - length
 
 	def calculate_slow_rate(self,vn):

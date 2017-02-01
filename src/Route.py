@@ -33,9 +33,9 @@ class Route(object):
 
 	def plot(self,count_max,direction='up'):
 		if direction =='up':
-			line_number = 0
+			line_number = MAX_PATH - 1
 			while(line_number < MAX_PATH):
-				plt.subplot(5,1,1+line_number)
+				# plt.subplot(5,1,1+line_number)
 				count =2
 				while(count <= count_max):
 					x = []
@@ -431,9 +431,11 @@ class Path(object):
 		count = 0
 		while not end:
 			if temp_place >= self.cell_amount or temp_place < 0:
+				# 坐标已经走到头了
 				break
 			car_num = self.path_map[lanes][temp_place]
 			if car_num != 0:
+				# 发现新的车辆
 				#print "length of car list is %s "%len(car_list)
 				#print "number is %s"%car_num
 				#print "car_dictory is %s "%self.car_dictory
@@ -441,8 +443,8 @@ class Path(object):
 				count = count + 1
 				if count == amount:
 					break
-			else:
-				temp_place = temp_place + step
+			# 不管有没有新的发现，都需要让坐标加上step
+			temp_place = temp_place + step
 		return car_list
 
 
