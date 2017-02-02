@@ -17,6 +17,6 @@ mile_per_kilometer = 0.621
 mile_per_meter = mile_per_kilometer / 1000
 
 CARS_INFO = [
-    {'type':0,'length':(4.5+1.5)*mile_per_meter,'max_velocity':60.0,'slow_rate':0.04,'safe_distance':1},# slef drive car
-    {'type':1,'length':(4.5+1.5)*mile_per_meter,'max_velocity':60.0,'slow_rate':1/64,'safe_distance':2}# not self drive car
+    {'type':0,'length':(4.5+1.5)*mile_per_meter,'max_velocity':30.0,'slow_rate':0.04,'safe_distance':1},# slef drive car
+    {'type':1,'length':(4.5+1.5)*mile_per_meter,'max_velocity':30.0,'slow_rate':0.4,'safe_distance':2}# not self drive car
 ]

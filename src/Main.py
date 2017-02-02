@@ -9,7 +9,7 @@
 # Main.py
 
 #encoding=utf-8
-# import pudb; pu.db
+#import pudb; pu.db
 import xlrd 
 import xlwt
 import json
@@ -45,12 +45,11 @@ for i in range(1,nrows):
     peak_ratio = 0.08
     peak_hours = 3
     direct_selected = row_data[6]
-    volume_per_hours = row_data[3] * peak_ratio / peak_hours / (row_data[5] + row_data[6]) *1.5
+    volume_per_hours = row_data[3] * peak_ratio / peak_hours / (row_data[5] + row_data[6]) *2
     avg_velocity = sum([a['max_velocity']*b for a,b in zip(CARS_INFO,ratios)])
-
-
     x = symbols('x')
-    density_per_miles = max(solve(Eq(avg_velocity*(x - (1/max_density)*x**2),volume_per_hours),x))
+    density_per_miles = max(solve(Eq(x*avg_velocity*log(max_density/x),volume_per_hours),x))
+    # density_per_miles = max(solve(Eq(avg_velocity*(x - (1/max_density)*x**2),volume_per_hours),x))
     item = {'id':row_data[0],'startpost':row_data[1],'endpost':row_data[2],'density':density_per_miles,'path_number':direct_selected}
     if input_data.has_key(item['id']):
         # 不是第一个数据

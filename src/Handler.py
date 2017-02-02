@@ -46,7 +46,7 @@ class CellularHandler(object):
 		"""
 
 		new_id = self.car_id_count
-		print "new car id is :%s"%new_id
+		logging.info("new car id is :%s"%new_id)
 		self.car_id_count = self.car_id_count+1
 		return new_id
 
@@ -159,7 +159,8 @@ class CellularHandler(object):
 		# 第一次迭代的时候没有上一辆车，所以用０
 		last_path = 0
 		output_cars = 0
-		while count < 20:
+		reocord_volume = []
+		while count < 600:
 			#[todo] 将上个车道的output加入这个车道的input
 			for index, path in enumerate(self.route_list[route_id].path_list):
 				car_dictory = self.to_next_path(path,last_path,output_cars)
@@ -168,10 +169,14 @@ class CellularHandler(object):
 			# self.itertor(self.route_list[route_id])
 			# 更新一遍之后，我们需要把最后一个路段结尾的ouput的车子加入第一个路段中，并且，我们需要更新他的car_id
 			output_cars = self._update_cars(output_cars)
+			reocord_volume.append(len(output_cars))
 			count = count + 1
 			print "driver count is :%s"%count
 		# logging.info(self.route_list[route_id].path_list[0].inc_path.recorder)
+		print reocord_volume
+		print "volume is %s"%sum(reocord_volume)
 		self.route_list[route_id].plot(self.car_id_count)
+
 
 	def itertor(self, route):
 		"""

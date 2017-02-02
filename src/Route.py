@@ -33,9 +33,11 @@ class Route(object):
 
 	def plot(self,count_max,direction='up'):
 		if direction =='up':
-			line_number = MAX_PATH - 3
+			offset = MAX_PATH - 3
+			line_number = offset
 			while(line_number < MAX_PATH):
-				plt.subplot(5,1,1+line_number)
+				plt.subplot(3,1,line_number - offset + 1)
+				# plt.subplot(5,1,1+line_number)
 				count =2
 				while(count <= count_max):
 					x = []
@@ -67,7 +69,7 @@ class Route(object):
 					plt.title("time-space in path %s"%line_number,fontsize=15)
 					plt.xlabel("space")
 					plt.ylabel("time", fontsize=15)
-					plt.axis([0,last_cell_amount+500,0,len(path.recorder[line_number])])
+					plt.axis([0,last_cell_amount,0,len(path.recorder[line_number])])
 				line_number = line_number + 1
 			plt.show()
 
@@ -215,7 +217,7 @@ class Path(object):
 				add_place = self.path_map[lanes][start_place:].index(0)
 				# 上面那个步骤没有出错，说明查找0号成功了
 				add_place = add_place +start_place
-				if self.is_safe_place(lanes,add_place, car.length):
+				if self.is_safe_place(lanes,add_place, car.length,car_id):
 					# 这个位置前后是安全的
 					logging.info("[add_init_Car] add id:%s, into lanes %s, place %s"%(car_id, lanes, add_place))
 					car.location = [lanes,add_place]
@@ -251,9 +253,9 @@ class Path(object):
 		self.path_map[car.lanes][car.place] = car_id
 		self.car_dictory[car_id]= car
 
-	def is_safe_place(self,lanes,add_place,length):
+	def is_safe_place(self,lanes,add_place,length,self_car_id):
 		# 需要确定前面的车的长度
-		forward_car = self.find_nearest_car(1,1,lanes,add_place)
+		forward_car = self.find_nearest_car(1,1,lanes,add_place,self_car_id)
 		if len(forward_car)==1:
 			# 前面有一辆车
 			forward_car = forward_car[0]
@@ -263,7 +265,7 @@ class Path(object):
 				# add_place = add_place + 1
 				# continue
 				return False
-		back_car = self.find_nearest_car(1,-1,lanes,add_place)
+		back_car = self.find_nearest_car(1,-1,lanes,add_place,self_car_id)
 		if len(back_car)==1:
 			# 后面有车
 			back_car = back_car[0]
@@ -290,7 +292,7 @@ class Path(object):
 		lanes = car.lanes
 		while True:
 			# 从该车本来应该达到的位置为起始点递减查找车辆，要求坐标位置为空。并且坐标是安全坐标
-			if self.path_map[lanes][add_place] == 0 and self.is_safe_place(lanes,add_place,car.length):
+			if self.path_map[lanes][add_place] == 0 and self.is_safe_place(lanes,add_place,car.length,car_id):
 				# 这个位置前后是安全的
 				logging.info("[add_Car] add id:%s, into lanes %s, place %s"%(car_id, lanes, add_place))
 				car.location = [lanes,add_place]
@@ -315,6 +317,10 @@ class Path(object):
 		1. 遍历目前存在于该路段的所有汽车；
 		2. 对每辆汽车做变换车道操作
 		3. 对每辆汽车做更新操作
+		---
+		change log:
+		2017.1.2
+			1. 寻找自己之前的车道的方法，没有考虑到别的车道的自己的横向坐标位置的车子，修复这个bug
 		"""
 		count = 0
 		clear_list = []
@@ -340,23 +346,28 @@ class Path(object):
 			# 	change_map.append([lanes,place,0])
 			# 	clear_list.append(car_id) 
 			# 	continue
-			forward_cars = self.find_nearest_car(2,1,lanes,place)
+
 			# back_cars = self.find_nearest_car(1,-1,car.lanes,car.place)
 
 			around_cars = {'r':False,'l':False}
 			# 获得左右两边的车子
 			if lanes - 1 >= MAX_PATH - self.path_num:
 				around_cars['r'] = True
-				around_cars['r+']=self.find_nearest_car(1,1,lanes - 1,place)
-				around_cars['r-']=self.find_nearest_car(1,-1,lanes - 1,place)
+				around_cars['r+']=self.find_nearest_car(1,1,lanes - 1,place,car_id)
+				around_cars['r-']=self.find_nearest_car(1,-1,lanes - 1,place,car_id)
 			if lanes + 1 < MAX_PATH:
 				around_cars['l'] = True
-				around_cars['l+'] = self.find_nearest_car(1,1,lanes + 1,place)
-				around_cars['l-'] = self.find_nearest_car(1,-1,lanes + 1,place)
-			around_cars['+'] = self.find_nearest_car(1,1,lanes,place)
+				around_cars['l+'] = self.find_nearest_car(1,1,lanes + 1,place,car_id)
+				around_cars['l-'] = self.find_nearest_car(1,-1,lanes + 1,place,car_id)
+			around_cars['+'] = self.find_nearest_car(1,1,lanes,place,car_id)
 			turn = car.change_lance(around_cars)
-			print "[update] turn is : %s"%turn
-			print "[update] has_token %s"%has_token
+			if turn != 0 :
+				logging.info("[update] start turning %s"%turn)
+				logging.info("[update] has_token %s"%has_token)
+				logging.info("[update] map:\n %s"%self.path_map)
+				logging.info("[update.car] :id:%s, info: %s"%(car_id,car))
+
+			forward_cars = self.find_nearest_car(2,1,lanes + turn,place,car_id)
 			(vn, new_location) = car.update_status(forward_cars,turn)
 			if not self.is_road_free(has_token, new_location):
 				# 如果位置已经被占据，重新更新状态
@@ -421,14 +432,19 @@ class Path(object):
 			count = count + 1
 		# logging.info("[update recorder]  self.recorder[MAX_PATH-1]: %s"%self.recorder[MAX_PATH-1])
 
-	def find_nearest_car(self,amount,direction,lanes,place):
+	def find_nearest_car(self,amount,direction,lanes,place,self_car_id):
 		"""
 			direction: +1 代表向前找 -1 代表向后找
 			amount: 要查找的车的数目
+
+		change log:
+		2017.1.2
+			1. 寻找自己之前的车道的方法，没有考虑到别的车道的自己的横向坐标位置的车子，修复这个bug：
+				增加self_car_id 参数，同时修改了 is_safe_place 的参数列表，也是增加了self_Car_id 参数
 		"""
 		end = False
-		step = direction
-		temp_place = place + step
+		step = direction	
+		temp_place = place
 		car_list = []
 		count = 0
 		while not end:
@@ -441,6 +457,9 @@ class Path(object):
 				#print "length of car list is %s "%len(car_list)
 				#print "number is %s"%car_num
 				#print "car_dictory is %s "%self.car_dictory
+				if car_num == self_car_id:
+					temp_place = temp_place + step
+					continue
 				car_list.append(self.car_dictory[car_num])
 				count = count + 1
 				if count == amount:
