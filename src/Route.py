@@ -33,9 +33,9 @@ class Route(object):
 
 	def plot(self,count_max,direction='up'):
 		if direction =='up':
-			line_number = MAX_PATH - 1
+			line_number = MAX_PATH - 3
 			while(line_number < MAX_PATH):
-				# plt.subplot(5,1,1+line_number)
+				plt.subplot(5,1,1+line_number)
 				count =2
 				while(count <= count_max):
 					x = []
@@ -64,9 +64,10 @@ class Route(object):
 						# print "last cell amount : %s"%last_cell_amount
 					plt.plot(x,y,'k-')
 					count = count + 1
-					plt.title("time-space in path %s"%path_num,fontsize=15)
+					plt.title("time-space in path %s"%line_number,fontsize=15)
 					plt.xlabel("space")
 					plt.ylabel("time", fontsize=15)
+					plt.axis([0,last_cell_amount+500,0,len(path.recorder[line_number])])
 				line_number = line_number + 1
 			plt.show()
 
@@ -382,15 +383,16 @@ class Path(object):
 			# 清空本轮被随机清除的车辆
 			del self.car_dictory[item]
 		for item in change_map:
-			print "[update.change_map], item[0] %s"%item[0]
-			print "[update.change_map], item[1] %s"%item[1]
-			print "[update.change_map], item[2] %s"%item[2]
-			print "[update.change_map], item[3] %s"%item[3]
-			print "[update.change_map], length path_map[item[0]]: %s"%len(self.path_map[item[0]])
-			print "[update.change_map],self.cell_amount: %s"%self.cell_amount
+
 			self.path_map[item[0]][item[1]] = item[2]
 			# 不用于清空，而是更新这个车子的信息
 			if item[2] != 0:
+				# print "[update.change_map], item[0] %s"%item[0]
+				# print "[update.change_map], item[1] %s"%item[1]
+				# print "[update.change_map], item[2] %s"%item[2]
+				# print "[update.change_map], item[3] %s"%item[3]
+				# print "[update.change_map], length path_map[item[0]]: %s"%len(self.path_map[item[0]])
+				# print "[update.change_map],self.cell_amount: %s"%self.cell_amount
 				car = self.car_dictory[item[2]]
 				car.update_infomation(item[3])
 		self.update_recorder(output_cars)
