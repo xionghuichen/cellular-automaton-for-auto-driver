@@ -33,10 +33,10 @@ class Route(object):
 
 	def plot(self,count_max,direction='up'):
 		if direction =='up':
-			offset = MAX_PATH - 3
+			offset = MAX_PATH - 1
 			line_number = offset
 			while(line_number < MAX_PATH):
-				plt.subplot(3,1,line_number - offset + 1)
+				# plt.subplot(3,1,line_number - offset + 1)
 				# plt.subplot(5,1,1+line_number)
 				count =2
 				while(count <= count_max):
@@ -189,6 +189,7 @@ class Path(object):
 		# 创建虚拟车辆，即障碍物
 		self.car_dictory[1] = NoAutoCar(0, CARS_INFO[1])
 		logging.info("[PATH] %s"%self.path_num)
+		print "cell amount is %s"%self.cell_amount
 		while count < MAX_PATH:
 			if count >= MAX_PATH - self.path_num:
 				self.path_map.append([0]*self.cell_amount)
@@ -210,7 +211,8 @@ class Path(object):
 		success = False
 		add_place = car.place
 		lanes = MAX_PATH - 1
-		start_place = 0 # MAX_VELOCITY + 1
+		start_place = add_place # MAX_VELOCITY + 1
+		zero_flag = False
 		while True:
 			try:
 				# 从最大速度+1 开始找第一个值为0的下标
@@ -239,9 +241,14 @@ class Path(object):
 			start_place = add_place + 1
 			if start_place >= self.cell_amount:
 				# 已经到达边界了
-				lanes = lanes - 1
-				start_place = 0
-				logging.info("[add_init_car] arrived boundary, change lanes to %s"%lanes)
+				if not zero_flag:
+					# 这次循环不是从头开始的
+					zero_flag =True
+					start_place = 0
+				else:
+					lanes = lanes - 1
+					start_place = 0
+					logging.info("[add_init_car] arrived boundary, change lanes to %s"%lanes)
 
 	def add_car_info(self,car_id,car):
 		"""将车辆信息加入地图和车辆字典
@@ -307,7 +314,9 @@ class Path(object):
 					# 已经低到头了
 					# [todo] 应该在左右车道重新选择，这里直接舍弃这辆车
 					logging.info("[add_car] add_place less than 0")
+
 					break
+		return success
 
 	def _set_cell_amount(self):
 		return int((self.endpost - self.startpost) * CELL_RATIO)

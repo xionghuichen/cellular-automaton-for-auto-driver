@@ -147,11 +147,11 @@ class CellularHandler(object):
 		for index, path in enumerate(self.route_list[route_id].path_list):
 			amount = path.car_initial_amount
 			count = 0 
-			logging.info("[driver] path index is %s, amount is %s"%(index,amount))
+			print "[driver] path index is %s, amount is %s"%(index,amount)
 			while(count < amount):
 				(car_id, new_car) = self.single_car_creator()
 				init_lanes = path.random_path()
-				init_place = new_car.velocity 
+				init_place = random.randint(0,path.cell_amount)# new_car.velocity 
 				new_car.location = [init_lanes, init_place]
 				path.add_init_car(new_car, car_id)
 				count = count + 1
@@ -160,7 +160,7 @@ class CellularHandler(object):
 		last_path = 0
 		output_cars = 0
 		reocord_volume = []
-		while count < 600:
+		while count < 1800:
 			#[todo] 将上个车道的output加入这个车道的input
 			for index, path in enumerate(self.route_list[route_id].path_list):
 				car_dictory = self.to_next_path(path,last_path,output_cars)
@@ -169,7 +169,14 @@ class CellularHandler(object):
 			# self.itertor(self.route_list[route_id])
 			# 更新一遍之后，我们需要把最后一个路段结尾的ouput的车子加入第一个路段中，并且，我们需要更新他的car_id
 			output_cars = self._update_cars(output_cars)
-			reocord_volume.append(len(output_cars))
+			# car_dictory = self.to_next_path(path,last_path,output_cars)
+			# reocord_volume.append(len(output_cars))
+			# for car_id,car in car_dictory.items():
+			# 	# 重新初始化补充车辆
+			# 	self.route_list[route_id].path_list[0].add_init_car(car, new_car_id)
+			# 	# 开始下一轮迭代之前，需要吧last_path 清空
+			# 	last_path = 0
+			# 	output_cars = 0
 			count = count + 1
 			print "driver count is :%s"%count
 		# logging.info(self.route_list[route_id].path_list[0].inc_path.recorder)
@@ -230,7 +237,12 @@ class CellularHandler(object):
 		logging.info("[handler.update]update car_dictory is :%s"%car_dictory)
 		for car_id,car in car_dictory.items():
 			# car.change_lanes()
-			path.add_car(car,car_id)
+			success = path.add_car(car,car_id)
+			if not success:
+				# 添加失败，作为新生成的车子进行重新初始化
+				new_car_id = self.next_car_id()
+				path.add_init_car(car, new_car_id)
+
 		output_cars = path.update()
 		# logging.info("completed update:%s"%path.recorder[MAX_PATH - 1][-1])
 		return output_cars

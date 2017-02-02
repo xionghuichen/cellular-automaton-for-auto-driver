@@ -45,7 +45,7 @@ for i in range(1,nrows):
     peak_ratio = 0.08
     peak_hours = 3
     direct_selected = row_data[6]
-    volume_per_hours = row_data[3] * peak_ratio / peak_hours / (row_data[5] + row_data[6]) *2
+    volume_per_hours = row_data[3] * peak_ratio / peak_hours / (row_data[5] + row_data[6]) * 2
     avg_velocity = sum([a['max_velocity']*b for a,b in zip(CARS_INFO,ratios)])
     x = symbols('x')
     density_per_miles = max(solve(Eq(x*avg_velocity*log(max_density/x),volume_per_hours),x))

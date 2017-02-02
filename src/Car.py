@@ -24,7 +24,7 @@ class BasicCar(object):
 		self.slow_rate_low = 0.01
 		self.slow_velocity = 1
 		self.safe_distance = 0# car_info['safe_distance']
-		self.slow_rate_high = 0.75
+		self.slow_rate_high = 0.8
 		self.turn_rate = 0.7
 
 
