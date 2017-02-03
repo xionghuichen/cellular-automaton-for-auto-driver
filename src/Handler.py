@@ -141,9 +141,17 @@ class CellularHandler(object):
 	def driver(self,route_id):
 		"""
 			元胞驱动器，用来启动所有程序流程
+
+		change log:
+		2017.2.3:
+			1. 增加路段之间的地图信息交互
+				if last_path != 0:
+					last_path.update_next_path_info(path)
+			2. 在这个路段的车辆
 		"""
 		count = 0 
-		# initial vehicles：初始化的车子必须在一个最大速度以外，避免从上一轮出来的车子和他相撞
+		# initial vehicles：
+		last_path = 0
 		for index, path in enumerate(self.route_list[route_id].path_list):
 			amount = path.car_initial_amount
 			count = 0 
@@ -155,22 +163,30 @@ class CellularHandler(object):
 				new_car.location = [init_lanes, init_place]
 				path.add_init_car(new_car, car_id)
 				count = count + 1
+			# 初始化完成，将这个里程路段的前面的车辆信息传递给上一个车道
+			if last_path != 0:
+				last_path.update_next_path_info(path)
+			last_path = path
 		count = 0
 		# 第一次迭代的时候没有上一辆车，所以用０
 		last_path = 0
 		output_cars = 0
 		reocord_volume = []
-		while count < 1800:
-			#[todo] 将上个车道的output加入这个车道的input
+		while count < 1200:
 			for index, path in enumerate(self.route_list[route_id].path_list):
 				car_dictory = self.to_next_path(path,last_path,output_cars)
 				output_cars = self.update(path,car_dictory)
+				if last_path != 0:
+					# 将上个车道的output加入这个车道的input
+					last_path.update_next_path_info(path)
 				last_path = path
+
 			# self.itertor(self.route_list[route_id])
 			# 更新一遍之后，我们需要把最后一个路段结尾的ouput的车子加入第一个路段中，并且，我们需要更新他的car_id
 			output_cars = self._update_cars(output_cars)
+			reocord_volume.append(len(output_cars))
+			# 加入这段代码，从头进入
 			# car_dictory = self.to_next_path(path,last_path,output_cars)
-			# reocord_volume.append(len(output_cars))
 			# for car_id,car in car_dictory.items():
 			# 	# 重新初始化补充车辆
 			# 	self.route_list[route_id].path_list[0].add_init_car(car, new_car_id)
@@ -184,46 +200,6 @@ class CellularHandler(object):
 		print "volume is %s"%sum(reocord_volume)
 		self.route_list[route_id].plot(self.car_id_count)
 
-
-	def itertor(self, route):
-		"""
-			迭代控制器,控制每次迭代进行的更新操作
-			- 从头开始更新路段信息，
-			- 将一个路段更新的结果传递给下一个路段
-			- 进行道路车辆的道路选择
-			- 记录本次更新的结果，用于最后绘图
-			- 对下一个路段进行更新，
-			- 一直到路段更新结束
-		"""
-		last_path = 0
-		#[todo] 将上个车道的output加入这个车道的input
-		output_cars = 0
-		for index, path in enumerate(route.path_list):
-			# [delete]
-			# if index < len(route.path_list) - 1:
-			# 	# 设置保留率，如果从不拥堵的路段过渡到拥堵的路段，则有保留率，否则，保留率为1
-			# 	next_path = route.path_list[index+1]
-			# 	rate = (path.car_volume()/next_path.car_volume())
-
-			# 	if rate >1:
-			# 		self.remain_rate =  (next_path.car_volume()/path.car_volume())
-			# 	else:
-			# 		self.remain_rate = rate
-			# initial vehicles：初始化的车子必须在一个最大速度以外，避免从上一轮出来的车子和他相撞
-			# add ouput vehicles.
-			# update.
-			
-			# 将上个里程的车传递到下一个里程中
-			#　[todo]如果没法增加到下一个里程中[被塞满了],则退回来上一个路段，目前是直接清除该辆车
-			#　最后一个里程的车作为系统边界回到第一个里程中
-			car_dictory = self.to_next_path(path,last_path,output_cars)
-			output_cars = self.update(path,car_dictory)
-			last_path = path
-		# 更新一遍之后，我们需要把最后一个路段结尾的ouput的车子加入第一个路段中，并且，我们需要更新他的car_id
-		output_cars = self._update_cars(output_cars)
-		car_dictory = self.to_next_path(route.path_list[0],last_path,output_cars)
-		output_cars = self.update(route.path_list[0],car_dictory)
-
 	def update(self,path, car_dictory):
 		"""
 			操作一个道路路段的更新
@@ -233,17 +209,24 @@ class CellularHandler(object):
 				- 前进更新
 			3. 将更新结果更新到地图中
 			4. 返回更新结果
+		change log
+		2017.2.3:
+			1. [todo]在进行add_car的操作之前，要做一个操作，使这辆车概率丢失
+			2. 每次是先更新，再将上一个里程过来的车加进来，而不是相反
 		"""
 		logging.info("[handler.update]update car_dictory is :%s"%car_dictory)
+		output_cars = path.update()
 		for car_id,car in car_dictory.items():
 			# car.change_lanes()
 			success = path.add_car(car,car_id)
 			if not success:
 				# 添加失败，作为新生成的车子进行重新初始化
-				new_car_id = self.next_car_id()
-				path.add_init_car(car, new_car_id)
-
-		output_cars = path.update()
+				# new_car_id = self.next_car_id()
+				logging.info("failed car %s"%car)
+				init_lanes = path.random_path()
+				init_place = random.randint(0,path.cell_amount)# new_car.velocity 
+				car.location = [init_lanes, init_place]
+				path.add_init_car(car, car_id)
 		# logging.info("completed update:%s"%path.recorder[MAX_PATH - 1][-1])
 		return output_cars
 

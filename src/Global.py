@@ -12,11 +12,13 @@
 MAX_PATH = 5
 TIME_SLICE = 1
 CELL_RATIO = 1000
-MAX_VELOCITY = 60 / CELL_RATIO
+MAX_VELOCITY = int(60.0/3600*CELL_RATIO*TIME_SLICE)
 mile_per_kilometer = 0.621
 mile_per_meter = mile_per_kilometer / 1000
 
 CARS_INFO = [
-    {'type':0,'length':(6+1.5)*mile_per_meter,'max_velocity':30.0,'slow_rate':0.04,'safe_distance':1},# slef drive car
-    {'type':1,'length':(6+1.5)*mile_per_meter,'max_velocity':30.0,'slow_rate':0.55,'safe_distance':2}# not self drive car
+    {'type':0,'length':(4.5+1.5)*mile_per_meter,'max_velocity':60.0,'slow_rate':0.04,'safe_distance':1},# slef drive car
+    {'type':1,'length':(4.5+1.5)*mile_per_meter,'max_velocity':60.0,'slow_rate':0.33,'safe_distance':2}# not self drive car
 ]
+
+print MAX_VELOCITY

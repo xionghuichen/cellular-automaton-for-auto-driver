@@ -23,7 +23,7 @@ class BasicCar(object):
 		self.slow_rate = car_info['slow_rate']
 		self.slow_rate_low = 0.01
 		self.slow_velocity = 1
-		self.safe_distance = 0# car_info['safe_distance']
+		self.safe_distance = 1# car_info['safe_distance']
 		self.slow_rate_high = 0.8
 		self.turn_rate = 0.7
 
@@ -98,7 +98,7 @@ class BasicCar(object):
 		else:
 			length = another_car.length
 		if distance - length < 0:
-			logging.info("[calculate distance], distance is %s, length is %s"%(distance,length))
+			# logging.info("[calculate distance], distance is %s, length is %s"%(distance,length))
 			return 0
 			# raise Exception("error in calculate distance, distance is %s, length is %s"%(distance,length))
 		return distance - length
@@ -154,10 +154,10 @@ class BasicCar(object):
 		around_cars[‘r+’] 之前写成 r-，导致判断出错
 		"""
 		# 考虑右边车道
-		logging.info("self: %s"%self)
-		logging.info("around_cars: %s"%around_cars)
+		# logging.info("self: %s"%self)
+		# logging.info("around_cars: %s"%around_cars)
 		if around_cars['+'] == []:
-			logging.info("前面没有车")
+			# logging.info("前面没有车")
 			# 前面没有车，不需要转弯
 			return 0
 		turn = 0
@@ -169,20 +169,23 @@ class BasicCar(object):
 				if self.calculate_distance(around_cars['r-'][0]) > around_cars['r-'][0].max_velocity:
 					result1 = True
 				else:
-					logging.info("right 右边的后面的车子距离自己太近了，%s"%self.calculate_distance(around_cars['r-'][0]))
+					pass
+					# logging.info("right 右边的后面的车子距离自己太近了，%s"%self.calculate_distance(around_cars['r-'][0]))
 			else:
-				logging.info("右边没有车，result1 = true")
+				# logging.info("右边没有车，result1 = true")
 				result1 = True
 			result2 = False
 			if around_cars['r+'] != []:
 				if self.calculate_distance(around_cars['r+'][0]) > self.calculate_distance(around_cars['+'][0]):
 					result2 = True
 				else:
-					logging.info("right 右边的前面的车的距离太近了，车况不如当前车道，dr+ :%s, d+ : %s"%(self.calculate_distance(around_cars['r+'][0]),self.calculate_distance(around_cars['+'][0])))
+					pass
+					# logging.info("right 右边的前面的车的距离太近了，车况不如当前车道，dr+ :%s, d+ : %s"%(self.calculate_distance(around_cars['r+'][0]),self.calculate_distance(around_cars['+'][0])))
 			else:
 				result2 = True
 		else:
-			logging.info("这辆车没有right右边车道")
+			# logging.info("这辆车没有right右边车道")
+			pass
 		if result1 and result2:
 			turn = -1
 
@@ -196,9 +199,10 @@ class BasicCar(object):
 				if self.calculate_distance(around_cars['l-'][0]) > around_cars['l-'][0].max_velocity:
 					result1 = True
 				else:
-					logging.info("left左边的后面的车子距离自己太近了，%s"%self.calculate_distance(around_cars['l-'][0]))
+					# logging.info("left左边的后面的车子距离自己太近了，%s"%self.calculate_distance(around_cars['l-'][0]))
+					pass
 			else:
-				logging.info("左边没有车，result1 = true")
+				# logging.info("左边没有车，result1 = true")
 				result1 = True
 			result2 = False
 			result3 = False
@@ -206,11 +210,13 @@ class BasicCar(object):
 				if self.calculate_distance(around_cars['+'][0]) < min(self.velocity+1,self.max_velocity) or self.velocity == 0:
 					result2 =True
 				else:
-					logging.info("不满足前面车况不太好的条件，车子可以自由行驶，不需要转弯")
+					pass
+					# logging.info("不满足前面车况不太好的条件，车子可以自由行驶，不需要转弯")
 				if self.calculate_distance(around_cars['l+'][0]) > self.calculate_distance(around_cars['+'][0]):
 					result3 = True
 				else:
-					logging.info("left 左边 前面的车况没有当前的车况好")
+					pass
+					# logging.info("left 左边 前面的车况没有当前的车况好")
 			else:
 				result2 = True
 		if result1 and result2 and result3:
@@ -218,7 +224,7 @@ class BasicCar(object):
 
 		if turn !=0:
 			# 有几率满足条件也不转弯
-			logging.info("决策 turn is: %s"%turn)
+			# logging.info("决策 turn is: %s"%turn)
 			if not do_probability_test(self.turn_rate):
 				turn = 0
 		return turn
@@ -267,7 +273,9 @@ class BasicCar(object):
 			# logging.info("v forward imaginary is :%s"%v_forward_imaginary)
 		if len(around_cars) != 0:
 			# logging.info("distance is :%s"%self.calculate_distance(around_cars[0]))
-			vn = min(vn,self.calculate_distance(around_cars[0])+v_forward_imaginary)
+			vn = min(vn,self.calculate_distance(around_cars[0]))
+			# [temp]
+			# vn = min(vn,self.calculate_distance(around_cars[0])+v_forward_imaginary)
 		# logging.info("vn before slow is %s"%vn)	
 			# 这辆车前面没有车，不会受限制
 		# 随机慢化
