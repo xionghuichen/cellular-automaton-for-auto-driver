@@ -3,7 +3,7 @@
 
 # Author      :   Xionghui Chen
 # Created     :   2017.1.22
-# Modified    :   2017.2.1
+# Modified    :   2017.2.4
 # Version     :   1.0
 
 # Main.py
@@ -52,7 +52,19 @@ for i in range(1,nrows):
     volume_per_hours = row_data[3] * peak_ratio / peak_hours / (row_data[5] + row_data[6]) * 1.5
 
     x = symbols('x')
-    density_per_miles = max(solve(Eq(x*avg_velocity*log(max_density/x),volume_per_hours),x))
+    c3 = [-5.45976747e-06,3.61579749e-03,-8.40823631e-01,7.32999243e+01,1.28547642e+01]
+    density_per_miles_list =solve(Eq(c3[0]*x**4+c3[1]*x**3+c3[2]*x**2+c3[3]*x**1+c3[4],volume_per_hours),x)
+    real_result = []
+    for item in density_per_miles_list:
+        try:
+            float_item = Float(item)
+        except Exception as e:
+            continue
+        real_result.append(float_item)
+    print real_result
+    density_per_miles = min(real_result)
+    # density_per_miles = max([x for x in density_per_miles if x > 0])
+    # density_per_miles = max(solve(Eq(x*avg_velocity*log(max_density/x),volume_per_hours),x))
     # density_per_miles = max(solve(Eq(avg_velocity*(x - (1/max_density)*x**2),volume_per_hours),x))
     item = {'id':row_data[0],'startpost':row_data[1],'endpost':row_data[2],'density':density_per_miles,'path_number':direct_selected}
     if input_data.has_key(item['id']):
@@ -63,10 +75,14 @@ for i in range(1,nrows):
         input_data[item[ 'id']] = [item]
     print item
     print "volume_per_hours : %s"%volume_per_hours
-# print input_data
+cell_handler = CellularHandler(input_data,ratios)
+(vo,ve)=cell_handler.driver(5)
+cell_handler.plot_all_path(5)
+
+# the folloing is to calclulate the realtion between density, velocity and volume
 # volume = []
 # velocity = []
-# density_list = range(1,int(max_density),5)
+# density_list = range(1,int(max_density),3)
 # for density in density_list:
 #     input_data = {5.0: [{'path_number': 1.0, 'endpost': 11.56, 'startpost': 10.15, 'id': 5.0, 'density': density}]}
 #     cell_handler = CellularHandler(input_data,ratios)
@@ -107,6 +123,14 @@ for i in range(1,nrows):
 # print c3
 # plt.show()
 
-input_data = {5.0: [{'path_number': 2.0, 'endpost': 11.56, 'startpost': 10.15, 'id': 5.0, 'density': 210}]}
-cell_handler = CellularHandler(input_data,ratios)
-(vo,ve)=cell_handler.driver(5)
+# c1 = [ -2.78201501e-04   3.83118328e-02  -1.89681989e+00   4.07068557e+01
+#   -3.29630173e+02   1.87820926e+03]
+# c2 = [ -0.2133762   56.20096039]
+# c3 = [ -5.45976747e-06   3.61579749e-03  -8.40823631e-01   7.32999243e+01
+#    1.28547642e+01]
+
+c3[0]*x**4+c3[1]*x**3+c3[2]*x**2+c3[3]*x**1+c3[4]
+# input_data = {5.0: [{'path_number': 1.0, 'endpost': 11.56, 'startpost': 10.15, 'id': 5.0, 'density': 210}],
+# 5.0: [{'path_number': 2.0, 'endpost': 11.56, 'startpost': 10.15, 'id': 5.0, 'density': 210}]}
+# cell_handler = CellularHandler(input_data,ratios)
+# (vo,ve)=cell_handler.driver(5)

@@ -51,8 +51,9 @@ class Route(object):
 					for place in place_list:
 						x_out.append(place + last_cell_amount)
 						y_out.append(times)
-			plt.plot(x_in,y_in,'xr')
-			plt.plot(x_out,y_out,'xb')
+				last_cell_amount = last_cell_amount +  path.cell_amount
+			plt.plot(x_in,y_in,'or')
+			plt.plot(x_out,y_out,'ob')
 			count =2
 			# 遍历每一个车辆编号，对每个车辆画一条线
 			while(count <= count_max):
@@ -320,10 +321,10 @@ class Path(object):
 		while True:
 			if empty_place == []:
 				if lanes < MAX_PATH - self.path_num:
-					logging.info("[add_init_car] invalid lanes")
+					# logging.info("[add_init_car] invalid lanes")
 					break
 				else:
-					logging.info("[add_init_car] valid lanes")
+					# logging.info("[add_init_car] valid lanes")
 					empty_place = self.find_empty_place(lanes)
 					lanes = lanes - 1
 			length = len(empty_place)
@@ -334,7 +335,7 @@ class Path(object):
 			add_place = empty_place[add_index]
 			if self.is_safe_place(lanes, add_place, car.length,car_id):
 				# 这个位置前后是安全的
-				logging.info("[add_init_Car] add id:%s, into lanes %s, place %s"%(car_id, lanes, add_place))
+				# logging.info("[add_init_Car] add id:%s, into lanes %s, place %s"%(car_id, lanes, add_place))
 				car.location = [lanes,add_place]
 				self.add_car_info(car_id,car)
 				success = True
@@ -401,7 +402,7 @@ class Path(object):
 				# 这里还是被占用了，不能开车
 				# add_place = add_place + 1
 				# continue
-				logging.info("这里还是被前面的车占用了，不能开车, info: %s"%forward_car)
+				# logging.info("这里还是被前面的车占用了，不能开车, info: %s"%forward_car)
 				return False
 		back_car = self.find_nearest_car(1,-1,lanes,add_place,self_car_id)
 		if len(back_car)==1:
@@ -412,7 +413,7 @@ class Path(object):
 				# 这里会把别人占用了，不能放车
 				# add_place = add_place + 1
 				# continue
-				logging.info("这里还是被后面的车占用了，不能开车， info: %s"%back_car)
+				# logging.info("这里还是被后面的车占用了，不能开车， info: %s"%back_car)
 				return False
 		return True
 		# 更新地图
@@ -433,7 +434,7 @@ class Path(object):
 			# 从该车本来应该达到的位置为起始点递减查找车辆，要求坐标位置为空。并且坐标是安全坐标
 			if self.path_map[lanes][add_place] == 0 and self.is_safe_place(lanes,add_place,car.length,car_id):
 				# 这个位置前后是安全的
-				logging.info("[add_Car] add id:%s, into lanes %s, place %s"%(car_id, lanes, add_place))
+				# logging.info("[add_Car] add id:%s, into lanes %s, place %s"%(car_id, lanes, add_place))
 				car.location = [lanes,add_place]
 				self.add_car_info(car_id,car)
 				success = True
@@ -501,11 +502,11 @@ class Path(object):
 				around_cars['l-'] = self.find_nearest_car(1,-1,lanes + 1,place,car_id)
 			around_cars['+'] = self.find_nearest_car(1,1,lanes,place,car_id)
 			turn = car.change_lance(around_cars)
-			if turn != 0 :
-				logging.info("[update] start turning %s"%turn)
-				logging.info("[update] has_token %s"%has_token)
-				logging.info("[update] map:\n %s"%self.path_map)
-				logging.info("[update.car] :id:%s, info: %s"%(car_id,car))
+			# if turn != 0 :
+				# logging.info("[update] start turning %s"%turn)
+				# logging.info("[update] has_token %s"%has_token)
+				# logging.info("[update] map:\n %s"%self.path_map)
+				# logging.info("[update.car] :id:%s, info: %s"%(car_id,car))
 
 			forward_cars = self.find_nearest_car(2,1,lanes + turn,place,car_id)
 			(vn, new_location) = car.update_status(forward_cars,turn)
@@ -660,31 +661,3 @@ class Path(object):
 			# 不管有没有新的发现，都需要让坐标加上step
 			temp_place = temp_place + step
 		return car_list
-
-
-	def plot(self,line_number,count_max,path_num):
-		count =2
-		plt.figure(path_num)
-		while(count <= count_max):
-			x = []
-			y = []
-			for index, path_list in enumerate(self.recorder[line_number]):
-				# if count == 3:
-					# logging.info("[route.plot] self.recorder[line_number]:%s"%self.recorder[line_number])
-				
-				appear = False
-				try:
-					place = path_list.index(count)
-					appear = True
-					x.append(place)
-					y.append(index)
-				except Exception as e:
-					if appear:
-						# 车消失了
-						break
-			plt.plot(x,y,'k-')
-			count = count + 1
-		plt.title("time-space in single path",fontsize=15)
-		plt.xlabel("space")
-		plt.ylabel("time", fontsize=15)
-		plt.show()

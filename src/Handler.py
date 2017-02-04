@@ -148,6 +148,10 @@ class CellularHandler(object):
 				if last_path != 0:
 					last_path.update_next_path_info(path)
 			2. 在这个路段的车辆
+		2017.2.4：
+			1. 把 last_path = 0 放到了 while times的循环体里面，
+				使得每次迭代的初始状态的last_path都是空的，
+				避免了最后一个里程的“下一个里程”信息被污染
 		"""
 		count = 0 
 		# initial vehicles：
@@ -169,15 +173,15 @@ class CellularHandler(object):
 			last_path = path
 		count = 0
 		# 第一次迭代的时候没有上一辆车，所以用０
-		last_path = 0
-		output_cars = 0
 		reocord_volume = []
 		reocord_velocity = []
+		last_path = 0
+		output_cars = 0
 		while count < TIMES:
 			for index, path in enumerate(self.route_list[route_id].path_list):
 				car_dictory = self.to_next_path(path,last_path,output_cars)
 				output_cars = self.update(path,car_dictory)
-				if last_path != 0:
+				if index != 0:
 					# 将上个车道的output加入这个车道的input
 					last_path.update_next_path_info(path)
 				last_path = path
@@ -192,6 +196,7 @@ class CellularHandler(object):
 			# car_dictory = self.to_next_path(path,last_path,output_cars)
 			# for car_id,car in car_dictory.items():
 			# 	# 重新初始化补充车辆
+			# 	new_car_id = self.next_car_id()
 			# 	self.route_list[route_id].path_list[0].add_init_car(car, new_car_id)
 			# 	# 开始下一轮迭代之前，需要吧last_path 清空
 			# 	last_path = 0
@@ -204,9 +209,12 @@ class CellularHandler(object):
 		avg_vel = sum(reocord_velocity)*1.0/len(reocord_velocity)*3.6
 		print "volume is %s"%avg_vol
 		print "velocity is %s , %s"%(avg_vel, reocord_velocity)
-		# self.route_list[route_id].plot(self.car_id_count)
-		self.route_list[route_id].plot_for_multi_path(self.car_id_count)
 		return (avg_vol, avg_vel)
+	def plot_single_path(self,route_id):
+		self.route_list[route_id].plot(self.car_id_count)
+
+	def plot_all_path(self,route_id):
+		self.route_list[route_id].plot_for_multi_path(self.car_id_count)
 
 	def update(self,path, car_dictory):
 		"""
@@ -229,12 +237,12 @@ class CellularHandler(object):
 			success = path.add_car(car,car_id)
 			if not success:
 				# 添加失败，作为新生成的车子进行重新初始化
-				# new_car_id = self.next_car_id()
+				new_car_id = self.next_car_id()
 				logging.info("failed car %s"%car)
 				init_lanes = path.random_path()
 				init_place = random.randint(0,path.cell_amount)# new_car.velocity 
 				car.location = [init_lanes, init_place]
-				path.add_init_car(car, car_id)
+				path.add_init_car(car, new_car_id)
 		# logging.info("completed update:%s"%path.recorder[MAX_PATH - 1][-1])
 		return output_cars
 
