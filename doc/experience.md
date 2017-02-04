@@ -17,3 +17,72 @@
     - 一个属性的读或者写需要进行权限检验的时候
     - 可以将setter和getter用于lambda表达式，进行map操作～
 3. 区别与setter和getter，用其他的动词代替这两个动词，使得你的方法设计出来表述更为清晰
+
+
+## git 使用
+1. 不能上传100m以上的文件，
+这个链接有解决方案： https://help.github.com/articles/removing-files-from-a-repository-s-history/
+注意，如果有多个分支涉及到100m以上的文件，你需要对每一个commit进行这个操作，最后在做一个 push才行
+2. 使用 git reset origin/master 回到远程的分支的最后一个commit版本
+3. git commit --amend 可以用于重新输入commit 的内容
+4. .gitignore 的配置规则、
+    配置文件用于配置不需要加入版本管理的文件，配置好该文件可以为我们的版本管理带来很大的便利，以下是个人对于配置 .gitignore 的一些心得。
+
+    1、配置语法：
+
+    　　以斜杠“/”开头表示目录；
+
+    　　以星号“*”通配多个字符；
+
+    　　以问号“?”通配单个字符
+
+    　　以方括号“[]”包含单个字符的匹配列表；
+
+    　　以叹号“!”表示不忽略(跟踪)匹配到的文件或目录；
+
+    　　
+
+    　　此外，git 对于 .ignore 配置文件是按行从上到下进行规则匹配的，意味着如果前面的规则匹配的范围更大，则后面的规则将不会生效；
+
+    2、示例：
+
+    　　（1）规则：fd1/*
+    　　　　  说明：忽略目录 fd1 下的全部内容；注意，不管是根目录下的 /fd1/ 目录，还是某个子目录 /child/fd1/ 目录，都会被忽略；
+
+    　　（2）规则：/fd1/*
+    　　　　  说明：忽略根目录下的 /fd1/ 目录的全部内容；
+
+    　　（3）规则：
+
+    /*
+    !.gitignore
+    !/fw/bin/
+    !/fw/sf/
+
+    说明：忽略全部内容，但是不忽略 .gitignore 文件、根目录下的 /fw/bin/ 和 /fw/sf/ 目录；
+
+## 应用列表产生式
+1. reocord_velocity.extend([x.velocity*1.0 for key,x in output_cars.items() if x.velocity > 0])
+
+## 拟合图像
+
+```
+    order = 8
+    #绘制原始数据
+    ax.plot(x,y,label=u'原始数据',color='m',linestyle='',marker='.')
+    #计算多项式
+    c=np.polyfit(x,y,order)#拟合多项式的系数存储在数组c中
+    yy=np.polyval(c,x)#根据多项式求函数值
+    #进行曲线绘制
+    x_new=np.linspace(0, 365, 2000)
+    f_liner=np.polyval(c,x_new)
+    #ax.plot(x,y,color='m',linestyle='',marker='.')
+    ax.plot(x_new,f_liner,label=u'拟合多项式曲线',color='g',linestyle='-',marker='')
+    # labels标签设置
+    ax.set_xlim(0, 366)
+    ax.set_xlabel(u'天')
+    ax.set_ylabel(u'盐度')
+    ax.set_title(u'盐度的日变化', bbox={'facecolor':'0.8', 'pad':5})
+    ax.legend()
+    plt.show()
+```

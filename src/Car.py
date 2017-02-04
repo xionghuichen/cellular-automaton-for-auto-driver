@@ -273,9 +273,9 @@ class BasicCar(object):
 			# logging.info("v forward imaginary is :%s"%v_forward_imaginary)
 		if len(around_cars) != 0:
 			# logging.info("distance is :%s"%self.calculate_distance(around_cars[0]))
-			vn = min(vn,self.calculate_distance(around_cars[0]))
+			#　vn = min(vn,self.calculate_distance(around_cars[0]))
 			# [temp]
-			# vn = min(vn,self.calculate_distance(around_cars[0])+v_forward_imaginary)
+			vn = min(vn,self.calculate_distance(around_cars[0])+v_forward_imaginary)
 		# logging.info("vn before slow is %s"%vn)	
 			# 这辆车前面没有车，不会受限制
 		# 随机慢化

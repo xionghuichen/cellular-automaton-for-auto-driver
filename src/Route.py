@@ -31,6 +31,68 @@ class Route(object):
 		for value in resource_item_list:
 			self.path_list.append(Path(value))
 
+	def plot_for_multi_path(self,count_max):
+		offset = 0
+		line_number = offset
+		while(line_number < MAX_PATH):
+			# plt.subplot(3,1,line_number - offset + 1)
+			plt.subplot(MAX_PATH,1,1+line_number)
+			x_in = [] 
+			y_in = []
+			x_out = []
+			y_out = []
+			last_cell_amount = 0
+			for path in self.path_list:
+				for times, place_list in enumerate(path.turn_in_from_recorder[line_number]):
+					for place in place_list:
+						x_in.append(place + last_cell_amount)
+						y_in.append(times)
+				for times, place_list in enumerate(path.turn_out_to_recorder[line_number]):
+					for place in place_list:
+						x_out.append(place + last_cell_amount)
+						y_out.append(times)
+			plt.plot(x_in,y_in,'xr')
+			plt.plot(x_out,y_out,'xb')
+			count =2
+			# 遍历每一个车辆编号，对每个车辆画一条线
+			while(count <= count_max):
+				x = []
+				y = []
+				last_cell_amount = 0
+				appear = False
+				disappear = False
+				# 遍历每一个里程
+				for path_num, path in enumerate(self.path_list):
+					# 遍历一个里程的一个车道的每个时间点记录
+					for times, path_list in enumerate(path.recorder[line_number]):
+						# if count == 3 and line_number == 1 and path_num == 1:
+						# 	logging.info("[route.plot] self.recorder[line_number]:%s"%path.recorder[line_number])
+						try:
+							# 记录这个时间点这个车子所在的位置
+							place = path_list.index(count)
+							appear = True
+							x.append(place+last_cell_amount)
+							y.append(times)
+						except Exception as e:
+							pass
+							# if appear:
+							# 	# 车子曾经出现过，现在车消失了
+							# 	# disappear = True
+							# 	# plt.plot(x,y,'k-')
+							# 	# x = []
+							# 	# y = []
+							# 	break
+					last_cell_amount = last_cell_amount +  path.cell_amount
+					# print "last cell amount : %s"%last_cell_amount
+				plt.plot(x,y,'k-')
+				count = count + 1
+				plt.title("time-space in path %s"%line_number,fontsize=15)
+				plt.xlabel("space")
+				plt.ylabel("time", fontsize=15)
+				plt.axis([0,last_cell_amount,0,len(path.recorder[line_number])])
+			line_number = line_number + 1
+		plt.show()
+		
 	def plot(self,count_max):
 		offset = MAX_PATH - 1
 		line_number = offset
@@ -198,10 +260,13 @@ class Path(object):
 		self.car_dictory = {}
 		self.cell_amount = self._set_cell_amount()
 		self.recorder = {}
+		self.turn_out_to_recorder = []
+		self.turn_in_from_recorder = []
 		self.next_car_dictory = {}
 		self.volume = []
 		self.next_path_map = []
 		self.car_initial_amount = int((self.endpost - self.startpost)*self.density * self.path_num)
+		self.update_times = 0
 		count = 0
 		# 创建虚拟车辆，即障碍物
 		self.car_dictory[1] = NoAutoCar(0, CARS_INFO[1])
@@ -215,7 +280,8 @@ class Path(object):
 				self.path_map.append([1]*(self.cell_amount)+[0]*MAX_VELOCITY)
 			#[todo]
 			count = count + 1
-
+			self.turn_out_to_recorder.append([])
+			self.turn_in_from_recorder.append([])
 
 	def update_next_path_info(self, next_road):
 		"""将来自下一个路段的信息更新到该路段,包括车辆信息和地图信息
@@ -386,7 +452,7 @@ class Path(object):
 	def _set_cell_amount(self):
 		return int((self.endpost - self.startpost) * CELL_RATIO)
 
-	def update(self):
+	def update(self,get_new_id):
 		"""
 		1. 遍历目前存在于该路段的所有汽车；
 		2. 对每辆汽车做变换车道操作
@@ -401,6 +467,7 @@ class Path(object):
 		has_token = []
 		output_cars = {}
 		change_lance_list = []
+		self.init_turn_recorder()
 		for car_id,car in self.car_dictory.items():	
 			if car_id == 1:
 				# 一号车不用更新
@@ -448,7 +515,16 @@ class Path(object):
 			else:
 				if turn != 0:
 					has_token.append(new_location)
-					change_lance_list.append(car_id)
+					# change_lance_list.append(car_id)
+					# 如果发生转弯，要对开始和结束节点做额外记号
+					self.add_turn_recorder('in',copy.deepcopy(lanes),copy.deepcopy(place))
+					self.add_turn_recorder('out',copy.deepcopy(new_location[0]),copy.deepcopy(new_location[1]))
+					# 更新car_id，因为变道了，如果还用一样的id会导致一些奇怪的连线
+					old_car_id = car_id
+					car_id = get_new_id()
+					# 原来id的车子从字典里面删除，使用新的id将车子加进去
+					change_lance_list.append([old_car_id,car_id])
+
 			# 清空历史状态
 			change_map.append([copy.deepcopy(lanes),copy.deepcopy(place),0,vn])
 			# 如果新的location过大，则说明已经离开这个地方了
@@ -457,9 +533,18 @@ class Path(object):
 				change_map.append([new_location[0],new_location[1],car_id,vn])
 
 			else:
-				# 需要把新的location记录下来，以便做里程迁移的时候使用
+				# 需要把新的location记录下来，以便做里程之间的迁移的时候使用
 				car.location = new_location
 				output_cars[car_id] = car
+		# 原来id的车子从字典里面删除，使用新的id将车子加进去，
+		# 因为此时change_map已经用新的车子的id做出了标记，所以这个步骤需要在执行，
+		# change_map和car_dictory的更新之前 
+		for item in change_lance_list:
+			#print item
+			#print self.car_dictory
+			car = self.car_dictory[item[0]]
+			del self.car_dictory[item[0]]
+			self.car_dictory[item[1]] = car
 		# 在车辆字典内清除该车辆
 		for key,value in output_cars.items():
 			del self.car_dictory[key]
@@ -476,6 +561,7 @@ class Path(object):
 				# print "[update.change_map],self.cell_amount: %s"%self.cell_amount
 				car = self.car_dictory[item[2]]
 				car.update_infomation(item[3])
+		self.update_times = self.update_times + 1
 		self.update_recorder(output_cars)
 		return output_cars
 
@@ -486,6 +572,20 @@ class Path(object):
 		except Exception as e:
 			road_is_free = True
 		return road_is_free
+	
+	def init_turn_recorder(self):
+		for index in range(0,MAX_PATH):
+			# 初始化新的时间单位的list
+			self.turn_out_to_recorder[index].append([])
+			self.turn_in_from_recorder[index].append([])
+
+	def add_turn_recorder(self,turn,lanes,place):
+		# recorder[path]:[[times]:[place]]
+		# path 在构造函数的时候已经定义完成，times在init_turn_recorder定义完成
+		if turn == 'in':
+			self.turn_in_from_recorder[lanes][self.update_times].append(place)
+		elif turn == 'out':
+			self.turn_out_to_recorder[lanes][self.update_times].append(place)
 
 	def update_recorder(self,output_cars):
 		count = 0# int(MAX_PATH - self.path_num)

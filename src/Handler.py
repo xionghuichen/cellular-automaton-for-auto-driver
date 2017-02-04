@@ -10,7 +10,7 @@ import json
 from Route import Route
 import random
 from functions import multi_probility_test, accumulator, do_probability_test
-from Global import CARS_INFO, MAX_PATH, MAX_VELOCITY,CELL_RATIO,TIME_SLICE
+from Global import CARS_INFO, MAX_PATH, MAX_VELOCITY,CELL_RATIO,TIME_SLICE, TIMES
 from Car import NoAutoCar, AutoCar
 import logging
 
@@ -172,7 +172,8 @@ class CellularHandler(object):
 		last_path = 0
 		output_cars = 0
 		reocord_volume = []
-		while count < 1200:
+		reocord_velocity = []
+		while count < TIMES:
 			for index, path in enumerate(self.route_list[route_id].path_list):
 				car_dictory = self.to_next_path(path,last_path,output_cars)
 				output_cars = self.update(path,car_dictory)
@@ -185,6 +186,8 @@ class CellularHandler(object):
 			# 更新一遍之后，我们需要把最后一个路段结尾的ouput的车子加入第一个路段中，并且，我们需要更新他的car_id
 			output_cars = self._update_cars(output_cars)
 			reocord_volume.append(len(output_cars))
+			if len(output_cars)>0:
+				reocord_velocity.extend([x.velocity*1.0 for key,x in output_cars.items() if x.velocity > 0])
 			# 加入这段代码，从头进入
 			# car_dictory = self.to_next_path(path,last_path,output_cars)
 			# for car_id,car in car_dictory.items():
@@ -197,8 +200,13 @@ class CellularHandler(object):
 			print "driver count is :%s"%count
 		# logging.info(self.route_list[route_id].path_list[0].inc_path.recorder)
 		print reocord_volume
-		print "volume is %s"%sum(reocord_volume)
-		self.route_list[route_id].plot(self.car_id_count)
+		avg_vol =sum(reocord_volume) * 3600 / TIMES
+		avg_vel = sum(reocord_velocity)*1.0/len(reocord_velocity)*3.6
+		print "volume is %s"%avg_vol
+		print "velocity is %s , %s"%(avg_vel, reocord_velocity)
+		# self.route_list[route_id].plot(self.car_id_count)
+		self.route_list[route_id].plot_for_multi_path(self.car_id_count)
+		return (avg_vol, avg_vel)
 
 	def update(self,path, car_dictory):
 		"""
@@ -215,7 +223,7 @@ class CellularHandler(object):
 			2. 每次是先更新，再将上一个里程过来的车加进来，而不是相反
 		"""
 		logging.info("[handler.update]update car_dictory is :%s"%car_dictory)
-		output_cars = path.update()
+		output_cars = path.update(self.next_car_id)
 		for car_id,car in car_dictory.items():
 			# car.change_lanes()
 			success = path.add_car(car,car_id)
