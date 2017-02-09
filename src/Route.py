@@ -661,3 +661,21 @@ class Path(object):
 			# 不管有没有新的发现，都需要让坐标加上step
 			temp_place = temp_place + step
 		return car_list
+
+	def plot_map(self):
+		x_axis = []
+		y_axis = []
+		for lane,lanes_list in enumerate(self.path_map):
+			#print "plot %s"%lane
+			if lane >= MAX_PATH - self.path_num and lane < MAX_PATH:
+				#print "valid %s"%lane
+				y_lane = [index for index, x in enumerate(lanes_list) if x != 0 and x !=1]
+			#	print y_lane
+				y_axis.extend([lane]*len(y_lane))
+				x_axis.extend(y_lane)
+		plt.plot(x_axis,y_axis,'o')
+		plt.axis([0,self.cell_amount,0,MAX_PATH])
+		plt.xlabel("cell count (stand for the place of a car in path) ",fontsize=15)
+		plt.ylabel("label number",fontsize=15)
+		plt.title("initial car",fontsize=15)
+		plt.show()

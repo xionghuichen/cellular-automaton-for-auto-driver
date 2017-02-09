@@ -129,7 +129,6 @@ cell_handler.plot_all_path(5)
 # c3 = [ -5.45976747e-06   3.61579749e-03  -8.40823631e-01   7.32999243e+01
 #    1.28547642e+01]
 
-c3[0]*x**4+c3[1]*x**3+c3[2]*x**2+c3[3]*x**1+c3[4]
 # input_data = {5.0: [{'path_number': 1.0, 'endpost': 11.56, 'startpost': 10.15, 'id': 5.0, 'density': 210}],
 # 5.0: [{'path_number': 2.0, 'endpost': 11.56, 'startpost': 10.15, 'id': 5.0, 'density': 210}]}
 # cell_handler = CellularHandler(input_data,ratios)

@@ -216,6 +216,9 @@ class CellularHandler(object):
 	def plot_all_path(self,route_id):
 		self.route_list[route_id].plot_for_multi_path(self.car_id_count)
 
+	def plot_path_map(self,route_id,path_id):
+		self.route_list[route_id].path_list[path_id].plot_map()
+		
 	def update(self,path, car_dictory):
 		"""
 			操作一个道路路段的更新
@@ -254,3 +257,4 @@ class CellularHandler(object):
 	def get_single_lines_cars(self,car):
 		location = car.get_place()
 		lanes = car.get_lanes()
+
