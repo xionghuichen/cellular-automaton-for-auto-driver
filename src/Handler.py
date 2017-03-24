@@ -205,8 +205,12 @@ class CellularHandler(object):
 			print "driver count is :%s"%count
 		# logging.info(self.route_list[route_id].path_list[0].inc_path.recorder)
 		print reocord_volume
+		print "reocord_velocity :%s"%reocord_velocity
 		avg_vol =sum(reocord_volume) * 3600 / TIMES
-		avg_vel = sum(reocord_velocity)*1.0/len(reocord_velocity)*3.6
+		if reocord_velocity != []:
+			avg_vel = sum(reocord_velocity)*1.0/len(reocord_velocity)*3.6
+		else:
+			avg_vel = 0
 		print "volume is %s"%avg_vol
 		print "velocity is %s , %s"%(avg_vel, reocord_velocity)
 		return (avg_vol, avg_vel)

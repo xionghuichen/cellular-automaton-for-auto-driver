@@ -20,4 +20,4 @@ CARS_INFO = [
     {'type':0,'length':(4.5+1.5)*mile_per_meter,'max_velocity':60.0,'slow_rate':0.04,'safe_distance':1},# slef drive car
     {'type':1,'length':(4.5+1.5)*mile_per_meter,'max_velocity':60.0,'slow_rate':0.1,'safe_distance':2}# not self drive car
 ]
-TIMES=120
+TIMES=60

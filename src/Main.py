@@ -77,7 +77,8 @@ for i in range(1,nrows):
     print "volume_per_hours : %s"%volume_per_hours
 cell_handler = CellularHandler(input_data,ratios)
 (vo,ve)=cell_handler.driver(5)
-cell_handler.plot_all_path(5)
+cell_handler.plot_path_map(5,0)
+# cell_handler.plot_all_path(5)
 
 # the folloing is to calclulate the realtion between density, velocity and volume
 # volume = []

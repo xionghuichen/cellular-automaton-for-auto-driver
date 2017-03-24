@@ -87,9 +87,11 @@ class Route(object):
 					# print "last cell amount : %s"%last_cell_amount
 				plt.plot(x,y,'k-')
 				count = count + 1
-				plt.title("time-space in path %s"%line_number,fontsize=15)
-				plt.xlabel("space")
-				plt.ylabel("time", fontsize=15)
+				plt.rcParams['font.sans-serif']=['SimHei']
+				plt.rcParams['axes.unicode_minus']=False
+				plt.title(u"道路编号 %s 的时空分布图"%line_number,fontsize=15)
+				plt.xlabel(u"道路单元标号 ")
+				plt.ylabel(u"时间单元", fontsize=15)
 				plt.axis([0,last_cell_amount,0,len(path.recorder[line_number])])
 			line_number = line_number + 1
 		plt.show()
@@ -673,9 +675,11 @@ class Path(object):
 			#	print y_lane
 				y_axis.extend([lane]*len(y_lane))
 				x_axis.extend(y_lane)
+		plt.rcParams['font.sans-serif']=['SimHei']
+		plt.rcParams['axes.unicode_minus']=False
 		plt.plot(x_axis,y_axis,'o')
 		plt.axis([0,self.cell_amount,0,MAX_PATH])
-		plt.xlabel("cell count (stand for the place of a car in path) ",fontsize=15)
-		plt.ylabel("label number",fontsize=15)
-		plt.title("initial car",fontsize=15)
+		plt.xlabel(u"路段单元 /个",fontsize=15)
+		plt.ylabel(u"车道号 ",fontsize=15)
+		plt.title(u"单一路段的车辆地图初始化",fontsize=15)
 		plt.show()
